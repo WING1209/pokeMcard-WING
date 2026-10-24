@@ -133,14 +133,6 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
         
-        .rip-pack.rainbow {
-            background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
-            box-shadow: 0 0 30px #ffff00, 0 0 60px #00ffff;
-            border-color: #ffffff;
-            animation: pulseRainbow 0.8s infinite;
-        }
-        @keyframes pulseRainbow { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.08); filter: hue-rotate(360deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
-
         .ripping {
             transform: scale(1.3) rotate(20deg) !important;
             opacity: 0 !important;
@@ -271,12 +263,12 @@
 
     <canvas id="particleCanvas"></canvas>
 
-    <!-- 1. タイトル画面 -->
-    <div id="titleScreen" class="screen active" onclick="handleTitleClick()">
+    <!-- 1. タイトル画面（スマホ専用のタッチ＆クリック両対応） -->
+    <div id="titleScreen" class="screen active">
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver3.0 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver5.0 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -369,19 +361,30 @@
 
 <script>
     // ==========================================
-    // こだわりのタイトルBGM（MP3直接再生版）
+    // スマホ専用ブラウザ完全対応のBGM制御
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
     titleBgm.volume = 0.4;
+    titleBgm.preload = 'auto';
 
-    function handleTitleClick() {
+    // スマホ特有のタッチイベントとクリックイベントの両方で確実に反応させる
+    const titleScreenEl = document.getElementById('titleScreen');
+    
+    function handleTitleInteraction(e) {
+        e.preventDefault(); // スマホ特有のタップ遅延やダブルタップ拡大を防止
+        
         titleBgm.play().then(() => {
             goToMenu();
-        }).catch(error => {
+        }).catch(err => {
+            // 万が一音声再生ブロックされても確実にメニューへ進む
             goToMenu();
         });
     }
+
+    // タッチ＆クリック両方リスナーに登録
+    titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
+    titleScreenEl.addEventListener('click', handleTitleInteraction);
 
     function stopTitleBGM() {
         titleBgm.pause();
@@ -649,7 +652,6 @@
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. フレーム（★★★のときは特別にホロゴールド枠）
         if (card.rarity === "★★★") {
             const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradFrame.addColorStop(0, '#f1c40f');
@@ -664,11 +666,9 @@
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
 
-        // 2. カード内部背景
         ctx.fillStyle = '#fdfefe';
         ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
 
-        // 3. 上部ヘッダー（名前 ＆ HP）
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 24px sans-serif';
         if(card.name.length > 10) ctx.font = 'bold 20px sans-serif';
@@ -678,7 +678,6 @@
         ctx.font = 'bold 22px sans-serif';
         ctx.fillText(`HP ${card.hp}`, canvas.width - 130, 55);
 
-        // タイプアイコン
         ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
         ctx.beginPath();
         ctx.arc(canvas.width - 55, 48, 15, 0, Math.PI * 2);
@@ -689,7 +688,6 @@
         ctx.fillText(card.type, canvas.width - 55, 53);
         ctx.textAlign = 'left';
 
-        // 4. イラストウィンドウ
         ctx.strokeStyle = '#d35400';
         ctx.lineWidth = 4;
         ctx.strokeRect(35, 75, canvas.width - 70, 350);
@@ -698,7 +696,6 @@
             ctx.drawImage(card.image, 37, 77, canvas.width - 74, 346);
         }
 
-        // ★ レア（★★★）のときのホログラム・シークレット光沢エフェクト（傾き連動）
         if (card.rarity === "★★★") {
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
@@ -717,14 +714,12 @@
             ctx.restore();
         }
 
-        // 5. ワザエリア
         ctx.fillStyle = '#fef9e7';
         ctx.fillRect(35, 440, canvas.width - 70, 175);
         ctx.strokeStyle = '#f5b041';
         ctx.lineWidth = 2;
         ctx.strokeRect(35, 440, canvas.width - 70, 175);
 
-        // ワザ情報
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 22px sans-serif';
         ctx.fillText(card.moveName, 50, 475);
@@ -740,4 +735,170 @@
         let lineY = 510;
         for(let i = 0; i < words.length; i++) {
             line += words[i];
-            if(line.
+            if(line.length >= 18 || i === words.length - 1) {
+                ctx.fillText(line, 50, lineY);
+                line = "";
+                lineY += 22;
+            }
+        }
+
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 45, 645);
+
+        const nextBtn = document.getElementById('nextBtn');
+        if (currentCardIndex === openedBatchCards.length - 1) {
+            nextBtn.innerText = "メニューへ";
+        } else {
+            nextBtn.innerText = "次へ ▶";
+        }
+    }
+
+    function nextCard() {
+        playSE('select');
+        if (currentCardIndex < openedBatchCards.length - 1) {
+            currentCardIndex++;
+            displayCurrentCard();
+            resetCardFlip();
+        } else {
+            goToMenu();
+        }
+    }
+
+    function prevCard() {
+        playSE('select');
+        if (currentCardIndex > 0) {
+            currentCardIndex--;
+            displayCurrentCard();
+            resetCardFlip();
+        }
+    }
+
+    // ==========================================
+    // 3Dカード操作
+    // ==========================================
+    const cardObj = document.getElementById('card3dObject');
+    const container = document.getElementById('cardContainer');
+    let isFlipped = false;
+    
+    let currentRotX = 0, currentRotY = 0;
+    let startRotX = 0, startRotY = 0;
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let hasMoved = false;
+
+    container.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        hasMoved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        startRotX = currentRotX;
+        startRotY = currentRotY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        let deltaX = e.clientX - startX;
+        let deltaY = e.clientY - startY;
+
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+        }
+
+        currentRotY = startRotY + (deltaX * 0.4);
+        currentRotX = startRotX - (deltaY * 0.4);
+        updateCardTransform();
+
+        if (openedBatchCards[currentCardIndex]) {
+            renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
+        }
+    });
+
+    window.addEventListener('pointerup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (!hasMoved) {
+            isFlipped = !isFlipped;
+            playSE('appear');
+            updateCardTransform();
+        }
+    });
+
+    function resetCardFlip() {
+        isFlipped = false;
+        currentRotX = 0;
+        currentRotY = 0;
+        startRotX = 0;
+        startRotY = 0;
+        updateCardTransform();
+        if (openedBatchCards[currentCardIndex]) {
+            renderCardCanvas(openedBatchCards[currentCardIndex], 0, 0);
+        }
+    }
+
+    function updateCardTransform() {
+        let flipDeg = isFlipped ? 180 : 0;
+        cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
+    }
+
+    function openDex() {
+        stopOtherBGM();
+        startOtherBGM('dex');
+        showScreen('dexScreen');
+        const grid = document.getElementById('dexGrid');
+        grid.innerHTML = '';
+
+        if (collectionDex.length === 0) {
+            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
+            return;
+        }
+
+        collectionDex.forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'dex-item';
+            
+            const img = document.createElement('img');
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = 150; tmpCanvas.height = 200;
+            const tCtx = tmpCanvas.getContext('2d');
+            tCtx.drawImage(card.image, 0, 0, 150, 200);
+            img.src = tmpCanvas.toDataURL();
+
+            item.appendChild(img);
+            grid.appendChild(item);
+        });
+    }
+
+    // パーティクル背景アニメーション
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+
+    let particles = [];
+    for(let i=0; i<40; i++) {
+        particles.push({
+            x: Math.random() * pCanvas.width,
+            y: Math.random() * pCanvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.5 + 0.2
+        });
+    }
+
+    function animateParticles() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+        pCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        particles.forEach(p => {
+            p.y -= p.speed;
+            if (p.y < 0) p.y = pCanvas.height;
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            pCtx.fill();
+        });
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+</script>
+</body>
+</html>
