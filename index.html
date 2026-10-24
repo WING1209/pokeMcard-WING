@@ -276,7 +276,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.0 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -314,7 +314,6 @@
         
         <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="playSE('select'); triggerFolderSelect();">📁 フォルダを選ぶ</button>
-            <!-- 画像未選択でも開けるように修正しつつ、原文通りのIDと挙動を維持 -->
             <button class="menu-btn" style="background:#e67e22; margin:4px 0;" id="openPackBtn" onclick="tryOpenPack();">✨ パックを開封する！(5枚)</button>
             <button class="btn-sub" style="width:80%; max-width:260px; margin-top:4px;" onclick="playSE('select'); goToMenu();">もどる</button>
         </div>
@@ -335,7 +334,7 @@
     <div id="cardResultScreen" class="screen">
         <div>
             <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★☆☆</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 3D回転</p>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 タップで裏返る</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -346,8 +345,8 @@
                 </div>
                 <!-- 裏面 -->
                 <div class="card-face card-back">
-                    <h3>🌀 カオス効果・生態メモ</h3>
-                    <p id="cardBackFlavor">ここに摩訶不思議な文章が表示されます。</p>
+                    <h3>🌀 ポケモン図鑑・生態メモ</h3>
+                    <p id="cardBackFlavor">ここにポケモンの生態情報が表示されます。</p>
                 </div>
             </div>
         </div>
@@ -370,7 +369,7 @@
 
 <script>
     // ==========================================
-    // BGM & 効果音設定 (原文ベース + スマホ対応)
+    // BGM & 効果音設定
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
@@ -378,9 +377,7 @@
 
     function playTitleBGM() {
         titleBgm.currentTime = 0;
-        titleBgm.play().catch(e => {
-            console.log("タイトルBGMの自動再生ブロック（タップ後に再生されます）");
-        });
+        titleBgm.play().catch(e => {});
     }
 
     function stopTitleBGM() {
@@ -388,10 +385,9 @@
         titleBgm.currentTime = 0;
     }
 
-    // タイトル画面をクリックした時の処理（原文のまま）
     function handleTitleClick() {
         initAudio();
-        playTitleBGM(); // ここでユーザーのタップをトリガーにBGMを確実に再生
+        playTitleBGM();
         playSE('select');
         stopTitleBGM(); 
         startOtherBGM('menu'); 
@@ -460,7 +456,7 @@
     }
 
     // ==========================================
-    // ゲーム本体のロジック (原文の構造を完全復元)
+    // ゲーム本体のロジック
     // ==========================================
     let currentPackType = 1;
     let loadedImageObjects = []; 
@@ -514,7 +510,6 @@
         if(input) input.click();
     }
 
-    // フォルダ読み込み処理
     document.getElementById('folderInput').addEventListener('change', function(e) {
         let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
         const statusText = document.getElementById('folderStatusText');
@@ -537,9 +532,8 @@
                 img.onload = function() {
                     loadedImageObjects.push(img);
                     loadedCount++;
-                    if(statusText) statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
+                    if(statusText) statusText.innerText = `📁 読み込み完了: ${loadedCount} /${totalToLoad} 枚`;
                     
-                    // 読み込み完了したらボタンを有効化
                     const openBtn = document.getElementById('openPackBtn');
                     if(openBtn) {
                         openBtn.disabled = false;
@@ -553,7 +547,6 @@
         });
     });
 
-    // ダミー画像生成（フォルダ未選択でも遊べる安全機能）
     function getFallbackImage() {
         const canvas = document.createElement('canvas');
         canvas.width = 400; canvas.height = 500;
@@ -569,7 +562,6 @@
     }
 
     function tryOpenPack() {
-        // 画像が選ばれていない場合はダミーを1枚入れてすぐ開けるようにする
         if (loadedImageObjects.length === 0) {
             loadedImageObjects.push(getFallbackImage());
         }
@@ -592,11 +584,11 @@
 
     function generateBatchCards() {
         openedBatchCards = [];
-        const packNames = ["炎の化身", "水の精霊", "草の守護者"];
-        const flavors = [
-            "かつてネットの海を漂っていた伝説のデータ生命体。",
-            "驚異的な演算速度を持ち、あらゆるシステムを自在に書き換える。",
-            "満月の夜にだけ姿を現し、神秘的な光を放つと伝えられている。"
+        const packNames = ["炎のモンスター", "水の精霊", "草の守護者"];
+        const moveNames = [
+            ["ひのたまタックル", "炎のエネルギーで相手を激しく突き飛ばす。"],
+            ["アクアバースト", "高水圧の水を勢いよく浴びせてダメージを与える。"],
+            ["ソーラービーム", "自然のエネルギーを集めて強力な光線を放つ。"]
         ];
 
         for (let i = 0; i < 5; i++) {
@@ -606,13 +598,17 @@
             if (rRand > 0.85) rarity = "★★★";
             else if (rRand > 0.5) rarity = "★★☆";
 
+            const moveInfo = moveNames[currentPackType];
+
             const card = {
                 image: randImg,
                 rarity: rarity,
-                name: packNames[currentPackType] + " #" + Math.floor(Math.random() * 900 + 100),
-                flavor: flavors[Math.floor(Math.random() * flavors.length)],
-                hp: Math.floor(Math.random() * 800 + 200),
-                atk: Math.floor(Math.random() * 300 + 50)
+                name: packNames[currentPackType] + " LV." + Math.floor(Math.random() * 50 + 10),
+                hp: Math.floor(Math.random() * 200 + 60),
+                type: currentPackType === 0 ? "炎" : (currentPackType === 1 ? "水" : "草"),
+                moveName: moveInfo[0],
+                moveDesc: moveInfo[1],
+                damage: Math.floor(Math.random() * 90 + 20)
             };
             openedBatchCards.push(card);
 
@@ -623,162 +619,34 @@
         localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
     }
 
+    // ==========================================
+    // ポケモンカード風デザインのCanvas描画
+    // ==========================================
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
         document.getElementById('rarityHeader').innerText = card.rarity;
-        document.getElementById('cardBackFlavor').innerText = card.name + "\n" + card.flavor + "\n\nHP: " + card.hp + " / ATK: " + card.atk;
+        document.getElementById('cardBackFlavor').innerText = `${card.name}\nタイプ: ${card.type}\nHP: ${card.hp}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n${card.moveDesc}`;
 
         const canvas = document.getElementById('resultCanvas');
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = '#222';
+        // 1. ポケモンカード風の金色の外枠フレーム
+        ctx.fillStyle = '#f39c12';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (card.image) {
-            ctx.drawImage(card.image, 40, 60, 520, 480);
-        }
-
+        
         ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.fillText(card.name, 40, 590);
+        ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
 
-        ctx.fillStyle = '#fff';
-        ctx.font = '24px sans-serif';
-        ctx.fillText("レア度: " + card.rarity, 40, 640);
-        ctx.fillText("HP: " + card.hp + "  ATK: " + card.atk, 40, 690);
+        // 2. カード内部の背景（少しクリームがかった白/シルバー風）
+        ctx.fillStyle = '#fdfefe';
+        ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
 
-        const nextBtn = document.getElementById('nextBtn');
-        if (currentCardIndex === openedBatchCards.length - 1) {
-            nextBtn.innerText = "メニューへ";
-        } else {
-            nextBtn.innerText = "次へ ▶";
-        }
-    }
+        // 3. 上部ヘッダー（名前 ＆ HP）
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText(card.name, 35, 60);
 
-    function nextCard() {
-        playSE('select');
-        if (currentCardIndex < openedBatchCards.length - 1) {
-            currentCardIndex++;
-            displayCurrentCard();
-            resetCardFlip();
-        } else {
-            goToMenu();
-        }
-    }
-
-    function prevCard() {
-        playSE('select');
-        if (currentCardIndex > 0) {
-            currentCardIndex--;
-            displayCurrentCard();
-            resetCardFlip();
-        }
-    }
-
-    // 3Dカード操作
-    const cardObj = document.getElementById('card3dObject');
-    const container = document.getElementById('cardContainer');
-    let isFlipped = false;
-    let rotX = 0, rotY = 0;
-
-    container.addEventListener('click', () => {
-        isFlipped = !isFlipped;
-        playSE('appear');
-        updateCardTransform();
-    });
-
-    function resetCardFlip() {
-        isFlipped = false;
-        rotX = 0;
-        rotY = 0;
-        updateCardTransform();
-    }
-
-    function updateCardTransform() {
-        let flipDeg = isFlipped ? 180 : 0;
-        cardObj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY + flipDeg}deg)`;
-    }
-
-    let isDragging = false;
-    let startX = 0, startY = 0;
-
-    container.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-    });
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        let deltaX = e.clientX - startX;
-        let deltaY = e.clientY - startY;
-        rotY = deltaX * 0.4;
-        rotX = -deltaY * 0.4;
-        updateCardTransform();
-    });
-
-    window.addEventListener('pointerup', () => {
-        isDragging = false;
-    });
-
-    function openDex() {
-        stopOtherBGM();
-        startOtherBGM('dex');
-        showScreen('dexScreen');
-        const grid = document.getElementById('dexGrid');
-        grid.innerHTML = '';
-
-        if (collectionDex.length === 0) {
-            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
-            return;
-        }
-
-        collectionDex.forEach(card => {
-            const item = document.createElement('div');
-            item.className = 'dex-item';
-            
-            const img = document.createElement('img');
-            const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 150; tmpCanvas.height = 200;
-            const tCtx = tmpCanvas.getContext('2d');
-            tCtx.drawImage(card.image, 0, 0, 150, 200);
-            img.src = tmpCanvas.toDataURL();
-
-            item.appendChild(img);
-            grid.appendChild(item);
-        });
-    }
-
-    // パーティクル背景アニメーション
-    const pCanvas = document.getElementById('particleCanvas');
-    const pCtx = pCanvas.getContext('2d');
-    pCanvas.width = window.innerWidth;
-    pCanvas.height = window.innerHeight;
-
-    let particles = [];
-    for(let i=0; i<40; i++) {
-        particles.push({
-            x: Math.random() * pCanvas.width,
-            y: Math.random() * pCanvas.height,
-            size: Math.random() * 2 + 1,
-            speed: Math.random() * 0.5 + 0.2
-        });
-    }
-
-    function animateParticles() {
-        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-        pCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        particles.forEach(p => {
-            p.y -= p.speed;
-            if (p.y < 0) p.y = pCanvas.height;
-            pCtx.beginPath();
-            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            pCtx.fill();
-        });
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-</script>
-</body>
-</html>
+        ctx.fillStyle = '#c0392b';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(`HP
