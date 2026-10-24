@@ -39,6 +39,7 @@
             justify-content: center;
             text-align: center;
             cursor: pointer;
+            background: transparent !important; /* パーティクルを見えるように透過 */
         }
         h1 {
             font-size: 2rem;
@@ -290,7 +291,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.1</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.2</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -381,7 +382,7 @@
 
 <script>
     // ==========================================
-    // 音声制御
+    // 音声制御（安全かつ確実に画面遷移させる）
     // ==========================================
     const bgm = document.getElementById('bgmAudio');
     bgm.volume = 0.4;
@@ -390,7 +391,10 @@
     
     function handleTitleInteraction(e) {
         if (e) e.stopPropagation();
+        
+        // BGM再生を試みる（ブロックされても画面遷移は100%実行する）
         bgm.play().catch(() => {});
+        
         goToMenu();
     }
 
@@ -548,4 +552,87 @@
     document.getElementById('selectFolderBtn').addEventListener('touchend', () => { playSE('select'); triggerFolderSelect(); });
     document.getElementById('selectFolderBtn').addEventListener('click', () => { playSE('select'); triggerFolderSelect(); });
 
-    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('
+    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('select'); tryOpenPack(); });
+    document.getElementById('openPackBtn').addEventListener('click', () => { playSE('select'); tryOpenPack(); });
+
+    document.getElementById('nextCardBtn').addEventListener('touchend', () => { nextCard(); });
+    document.getElementById('nextCardBtn').addEventListener('click', () => { nextCard(); });
+
+    document.getElementById('prevCardBtn').addEventListener('touchend', () => { prevCard(); });
+    document.getElementById('prevCardBtn').addEventListener('click', () => { prevCard(); });
+
+    document.getElementById('packBlue').addEventListener('touchend', () => { playSE('select'); selectPack(1); });
+    document.getElementById('packBlue').addEventListener('click', () => { playSE('select'); selectPack(1); });
+    document.getElementById('packRed').addEventListener('touchend', () => { playSE('select'); selectPack(0); });
+    document.getElementById('packRed').addEventListener('click', () => { playSE('select'); selectPack(0); });
+    document.getElementById('packGreen').addEventListener('touchend', () => { playSE('select'); selectPack(2); });
+    document.getElementById('packGreen').addEventListener('click', () => { playSE('select'); selectPack(2); });
+
+    function selectPack(type) {
+        currentPackType = type;
+        ['packRed', 'packBlue', 'packGreen'].forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if(idx === type) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+        const names = ["赤パック (炎)", "青パック (水)", "緑パック (草)"];
+        document.getElementById('packNameLabel').innerText = names[type];
+    }
+
+    function triggerFolderSelect() {
+        document.getElementById('folderInput').click();
+    }
+
+    document.getElementById('folderInput').addEventListener('change', function(e) {
+        let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+        const statusText = document.getElementById('folderStatusText');
+        if (files.length === 0) return;
+
+        if (files.length > 200) {
+            files.sort(() => Math.random() - 0.5);
+            files = files.slice(0, 200);
+            statusText.innerText = `📁 全 ${files.length}枚以上からランダムに200枚を選出中...`;
+        } else {
+            statusText.innerText = `📁 全 ${files.length}枚を読み込み中...`;
+        }
+        
+        loadedImageObjects = [];
+        let loadedCount = 0;
+        const totalToLoad = files.length;
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    loadedImageObjects.push(img);
+                    loadedCount++;
+                    statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
+                    
+                    const openBtn = document.getElementById('openPackBtn');
+                    openBtn.disabled = false;
+                    openBtn.style.opacity = '1';
+                };
+                img.onerror = function() { loadedCount++; };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    function getFallbackImage() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 540; canvas.height = 820;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(0, 0, 540, 820);
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText("Pocket Card", 170, 410);
+        const img = new Image();
+        img.src = canvas.toDataURL();
+        return img;
+    }
+
+    function tryOpenPack() {
+        if (loadedImageObjects.
