@@ -301,7 +301,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver6.3 (図鑑完全描画修復版)</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -510,7 +510,7 @@
     let isViewingDexCard = false;
     let hasHighRarityInBatch = false;
 
-    // 安全なデータロード＆フォールバック生成
+    // 安全なフォールバック画像生成
     function getFallbackImage() {
         const canvas = document.createElement('canvas');
         canvas.width = 540; canvas.height = 820;
@@ -527,28 +527,32 @@
 
     const fallbackImg = getFallbackImage();
 
-    try {
-        const savedDex = localStorage.getItem('pocket_mon_dex');
-        if (savedDex) {
-            const rawData = JSON.parse(savedDex);
-            if (Array.isArray(rawData)) {
-                collectionDex = rawData.map(item => {
-                    const img = new Image();
-                    if (item.imageSrc) {
-                        img.src = item.imageSrc;
-                    } else {
-                        img.src = fallbackImg.src;
-                    }
-                    return {
-                        ...item,
-                        image: img
-                    };
-                });
+    // 起動時のデータ読み込み（LocalStorageから確実に復元）
+    function loadDexFromStorage() {
+        try {
+            const savedDex = localStorage.getItem('pocket_mon_dex');
+            if (savedDex) {
+                const rawData = JSON.parse(savedDex);
+                if (Array.isArray(rawData)) {
+                    collectionDex = rawData.map(item => {
+                        const img = new Image();
+                        if (item.imageSrc) {
+                            img.src = item.imageSrc;
+                        } else {
+                            img.src = fallbackImg.src;
+                        }
+                        return {
+                            ...item,
+                            image: img
+                        };
+                    });
+                }
             }
+        } catch(e) {
+            collectionDex = [];
         }
-    } catch(e) {
-        collectionDex = [];
     }
+    loadDexFromStorage();
 
     function saveDexToStorage() {
         try {
@@ -903,7 +907,7 @@
         ctx.strokeRect(40, 85, canvas.width - 80, 430);
 
         try {
-            const imgToDraw = (card.image && card.image.complete) ? card.image : fallbackImg;
+            const imgToDraw = (card.image && card.image.complete && card.image.naturalWidth !== 0) ? card.image : fallbackImg;
             ctx.drawImage(imgToDraw, 42, 87, canvas.width - 84, 426);
         } catch(e) {
             ctx.drawImage(fallbackImg, 42, 87, canvas.width - 84, 426);
@@ -1110,9 +1114,10 @@
     }
 
     // ==========================================
-    // 獲得カード図鑑 (サムネイル一覧の完全描画保証)
+    // 獲得カード図鑑 (確実な一覧サムネイル描画)
     // ==========================================
     function openDex() {
+        loadDexFromStorage(); // 最新データを再読み込み
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         grid.innerHTML = '';
@@ -1129,11 +1134,10 @@
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 270; thumbCanvas.height = 410;
             
-            // サムネイル用の描画（画像未読込時も考慮）
+            // 画像が読み込み済みの場合は即座に描画、未完了ならonloadで描画
             if (card.image && card.image.complete && card.image.naturalWidth !== 0) {
                 renderCardCanvas(card, 0, 0, thumbCanvas);
-                item.appendChild(thumbCanvas);
-            } else {
+            } else if (card.image) {
                 card.image.onload = () => {
                     renderCardCanvas(card, 0, 0, thumbCanvas);
                 };
@@ -1141,8 +1145,11 @@
                     card.image.src = fallbackImg.src;
                 }
                 renderCardCanvas(card, 0, 0, thumbCanvas);
-                item.appendChild(thumbCanvas);
+            } else {
+                renderCardCanvas(card, 0, 0, thumbCanvas);
             }
+            
+            item.appendChild(thumbCanvas);
             
             // 図鑑のカードをタップすると1枚表示になり、360度鑑賞モードへ直行
             item.onclick = () => {
