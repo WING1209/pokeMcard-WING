@@ -133,17 +133,25 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
         
+        .rip-pack.rainbow {
+            background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
+            box-shadow: 0 0 30px #ffff00, 0 0 60px #00ffff;
+            border-color: #ffffff;
+            animation: pulseRainbow 0.8s infinite;
+        }
+        @keyframes pulseRainbow { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.08); filter: hue-rotate(360deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
+
         .ripping {
             transform: scale(1.3) rotate(20deg) !important;
             opacity: 0 !important;
             transition: all 0.5s ease-out !important;
         }
 
-        /* 3Dカードコンテナ */
+        /* 縦長 ＆ 厚みを持たせた3Dカードコンテナ */
         .card-view-container {
-            perspective: 1200px;
-            width: 280px;
-            height: 390px;
+            perspective: 1400px;
+            width: 260px;
+            height: 400px;
             margin: 5px auto;
             position: relative;
             cursor: grab;
@@ -154,7 +162,7 @@
             height: 100%;
             position: absolute;
             transform-style: preserve-3d;
-            border-radius: 15px;
+            border-radius: 12px;
             will-change: transform;
         }
         .card-face {
@@ -164,14 +172,14 @@
             top: 0; left: 0;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.8);
         }
         .card-front { background: #111; }
         .card-front canvas {
             width: 100%;
             height: 100%;
-            border-radius: 15px;
+            border-radius: 12px;
             display: block;
         }
         .card-back {
@@ -201,13 +209,23 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
+        /* 3Dカードの厚み（側面エッジ）表現 */
+        .card-edge {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 12px;
+            background: #d4ac0d;
+            transform: translateZ(-2px);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
         .dex-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             width: 100%;
             max-width: 340px;
-            height: 60vh;
+            height: 62vh;
             overflow-y: auto;
             padding: 8px;
             background: rgba(255,255,255,0.05);
@@ -219,10 +237,14 @@
             overflow: hidden;
             border: 2px solid #444;
             cursor: pointer;
-            aspect-ratio: 3/4;
+            aspect-ratio: 260/400;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.1s;
+        }
+        .dex-item:active {
+            transform: scale(0.95);
         }
         .dex-item img {
             width: 100%;
@@ -263,12 +285,12 @@
 
     <canvas id="particleCanvas"></canvas>
 
-    <!-- 1. タイトル画面（スマホ専用のタッチ＆クリック両対応） -->
+    <!-- 1. タイトル画面 -->
     <div id="titleScreen" class="screen active">
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver5.0 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -325,15 +347,17 @@
     <!-- 5. 獲得カード閲覧画面 -->
     <div id="cardResultScreen" class="screen">
         <div>
-            <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★☆☆</div>
+            <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★</div>
             <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 タップで裏返る</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
             <div class="card-3d-object" id="card3dObject">
+                <!-- 厚み（側面エッジ） -->
+                <div class="card-edge"></div>
                 <!-- 表面 -->
                 <div class="card-face card-front">
-                    <canvas class="card-canvas" id="resultCanvas" width="600" height="840"></canvas>
+                    <canvas class="card-canvas" id="resultCanvas" width="520" height="800"></canvas>
                 </div>
                 <!-- 裏面 -->
                 <div class="card-face card-back">
@@ -343,7 +367,7 @@
             </div>
         </div>
 
-        <div class="action-bar">
+        <div class="action-bar" id="resultActionBar">
             <button class="btn-sub" onclick="prevCard()">◀ 前へ</button>
             <button class="btn-main" id="nextBtn" onclick="nextCard()">次へ ▶</button>
             <button class="btn-sub" style="background:#7f8c8d;" onclick="playSE('select'); goToMenu();">メニュー</button>
@@ -352,7 +376,7 @@
 
     <!-- 6. 獲得カード一覧 (図鑑) 画面 -->
     <div id="dexScreen" class="screen">
-        <h2 style="margin:5px 0;">獲得カード図鑑</h2>
+        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで鑑賞)</h2>
         <div class="dex-grid" id="dexGrid"></div>
         <div style="width:90%; max-width:280px; text-align:center; margin-top:5px;">
             <button class="btn-sub" style="width:100%;" onclick="playSE('select'); goToMenu();">もどる</button>
@@ -361,28 +385,24 @@
 
 <script>
     // ==========================================
-    // スマホ専用ブラウザ完全対応のBGM制御
+    // タイトルBGM (タイトル・メニュー画面のみ)
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
     titleBgm.volume = 0.4;
     titleBgm.preload = 'auto';
 
-    // スマホ特有のタッチイベントとクリックイベントの両方で確実に反応させる
     const titleScreenEl = document.getElementById('titleScreen');
     
     function handleTitleInteraction(e) {
-        e.preventDefault(); // スマホ特有のタップ遅延やダブルタップ拡大を防止
-        
+        e.preventDefault();
         titleBgm.play().then(() => {
             goToMenu();
         }).catch(err => {
-            // 万が一音声再生ブロックされても確実にメニューへ進む
             goToMenu();
         });
     }
 
-    // タッチ＆クリック両方リスナーに登録
     titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
@@ -391,69 +411,26 @@
         titleBgm.currentTime = 0;
     }
 
-    let audioCtx = null;
-    let otherBgmInterval = null;
-
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    function startOtherBGM(mode) {
-        initAudio();
-        stopOtherBGM();
-        let notes = mode === 'menu' ? [220, 261.63, 329.63, 392, 329.63, 261.63] : [293.66, 369.99, 440, 554.37, 440, 369.99];
-        let speed = mode === 'menu' ? 350 : 400;
-
-        let idx = 0;
-        otherBgmInterval = setInterval(() => {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(notes[idx], audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (speed / 1000));
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + (speed / 1000));
-                idx = (idx + 1) % notes.length;
-            } catch(e) {}
-        }, speed);
-    }
-
-    function stopOtherBGM() {
-        if (otherBgmInterval) {
-            clearInterval(otherBgmInterval);
-            otherBgmInterval = null;
-        }
-    }
-
-    function playSE(type, param = 0) {
-        initAudio();
-        if (!audioCtx) return;
-        const now = audioCtx.currentTime;
+    // 効果音 (SE) システム
+    function playSE(type) {
         try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') ctx.resume();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(500, now);
-            osc.frequency.exponentialRampToValueAtTime(750, now + 0.05);
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
             gain.gain.setValueAtTime(0.08, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(ctx.destination);
             osc.start(now); osc.stop(now + 0.05);
         } catch(e) {}
     }
 
     // ==========================================
-    // ゲーム本体のロジック & カオス文章パーツ
+    // カオス文章パーツ
     // ==========================================
     const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙ティブな", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
     const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
@@ -482,6 +459,7 @@
     let openedBatchCards = []; 
     let currentCardIndex = 0;
     let collectionDex = [];
+    let isViewingDexCard = false; // 図鑑からの個別鑑賞モード判定
 
     try {
         collectionDex = JSON.parse(localStorage.getItem('pocket_mon_dex') || '[]');
@@ -497,18 +475,17 @@
     }
 
     function goToTitle() { 
-        stopOtherBGM();
-        stopTitleBGM(); 
+        stopTitleBGM();
+        // タイトル画面の時だけBGM再生用イベントを再有効化
         showScreen('titleScreen'); 
     }
     function goToMenu() { 
-        stopOtherBGM();
-        startOtherBGM('menu');
+        if(titleBgm.paused) {
+            titleBgm.play().catch(e => {});
+        }
         showScreen('menuScreen'); 
     }
     function startPackSelect() { 
-        stopOtherBGM();
-        startOtherBGM('menu');
         showScreen('packSelectScreen'); 
     }
 
@@ -570,13 +547,13 @@
 
     function getFallbackImage() {
         const canvas = document.createElement('canvas');
-        canvas.width = 400; canvas.height = 500;
+        canvas.width = 520; canvas.height = 800;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(0, 0, 400, 500);
+        ctx.fillRect(0, 0, 520, 800);
         ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 28px sans-serif';
-        ctx.fillText("Pocket Card", 110, 250);
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText("Pocket Card", 160, 400);
         const img = new Image();
         img.src = canvas.toDataURL();
         return img;
@@ -596,22 +573,29 @@
 
         setTimeout(() => {
             packObj.classList.remove('ripping');
+            stopTitleBGM(); // パック開封以降はBGMを止めて演出に集中
             generateBatchCards();
             currentCardIndex = 0;
+            isViewingDexCard = false;
+            document.getElementById('resultActionBar').style.display = 'flex';
             showScreen('cardResultScreen');
             displayCurrentCard();
         }, 500);
     }
 
+    // ==========================================
+    // ポケカ風レア度（★, ★★, ★★★, UR）の抽選
+    // ==========================================
     function generateBatchCards() {
         openedBatchCards = [];
 
         for (let i = 0; i < 5; i++) {
             const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
             const rRand = Math.random();
-            let rarity = "★☆☆";
-            if (rRand > 0.85) rarity = "★★★";
-            else if (rRand > 0.5) rarity = "★★☆";
+            let rarity = "★";
+            if (rRand > 0.92) rarity = "UR";
+            else if (rRand > 0.75) rarity = "★★★";
+            else if (rRand > 0.45) rarity = "★★";
 
             const cardName = getRandomItem(adjParts) + " " + getRandomItem(nounParts);
             const moveName = getRandomItem(attackParts);
@@ -637,7 +621,7 @@
     }
 
     // ==========================================
-    // ポケモンカード風フレーム ＆ ホログラム加工描画
+    // ポケカ風フレーム ＆ 派手なホロ・UR演出描画
     // ==========================================
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
@@ -652,7 +636,14 @@
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (card.rarity === "★★★") {
+        // レア度に応じた豪華なフレーム背景
+        if (card.rarity === "UR") {
+            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradFrame.addColorStop(0, '#ff007f');
+            gradFrame.addColorStop(0.5, '#7f00ff');
+            gradFrame.addColorStop(1, '#00ffff');
+            ctx.fillStyle = gradFrame;
+        } else if (card.rarity === "★★★") {
             const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradFrame.addColorStop(0, '#f1c40f');
             gradFrame.addColorStop(0.5, '#e74c3c');
@@ -666,88 +657,96 @@
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
 
+        // 内部背景
         ctx.fillStyle = '#fdfefe';
-        ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
+        ctx.fillRect(22, 22, canvas.width - 44, canvas.height - 44);
 
+        // 上部ヘッダー（名前 ＆ HP）
         ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 24px sans-serif';
-        if(card.name.length > 10) ctx.font = 'bold 20px sans-serif';
-        ctx.fillText(card.name, 35, 55);
+        ctx.font = 'bold 28px sans-serif';
+        if(card.name.length > 10) ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(card.name, 40, 62);
 
         ctx.fillStyle = '#c0392b';
-        ctx.font = 'bold 22px sans-serif';
-        ctx.fillText(`HP ${card.hp}`, canvas.width - 130, 55);
+        ctx.font = 'bold 25px sans-serif';
+        ctx.fillText(`HP ${card.hp}`, canvas.width - 150, 62);
 
+        // タイプアイコン
         ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
         ctx.beginPath();
-        ctx.arc(canvas.width - 55, 48, 15, 0, Math.PI * 2);
+        ctx.arc(canvas.width - 60, 54, 18, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(card.type, canvas.width - 55, 53);
+        ctx.fillText(card.type, canvas.width - 60, 60);
         ctx.textAlign = 'left';
 
+        // イラストウィンドウ (さらに縦長スリムに)
         ctx.strokeStyle = '#d35400';
         ctx.lineWidth = 4;
-        ctx.strokeRect(35, 75, canvas.width - 70, 350);
+        ctx.strokeRect(40, 85, canvas.width - 80, 430);
 
         if (card.image) {
-            ctx.drawImage(card.image, 37, 77, canvas.width - 74, 346);
+            ctx.drawImage(card.image, 42, 87, canvas.width - 84, 426);
         }
 
-        if (card.rarity === "★★★") {
+        // ★★★★ / UR のときの派手なホログラム・レインボー光沢演出
+        if (card.rarity === "★★★" || card.rarity === "UR") {
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
-            let lightX = (canvas.width / 2) + (rotY * 15);
-            let lightY = (canvas.height / 2) + (rotX * 15);
+            let lightX = (canvas.width / 2) + (rotY * 20);
+            let lightY = (canvas.height / 2) + (rotX * 20);
 
-            const holoGrad = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, 250);
-            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            holoGrad.addColorStop(0.2, 'rgba(255, 0, 128, 0.4)');
-            holoGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.4)');
-            holoGrad.addColorStop(0.6, 'rgba(255, 255, 0, 0.4)');
+            const holoGrad = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, 300);
+            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            holoGrad.addColorStop(0.25, 'rgba(255, 0, 128, 0.5)');
+            holoGrad.addColorStop(0.5, 'rgba(0, 255, 255, 0.5)');
+            holoGrad.addColorStop(0.75, 'rgba(255, 255, 0, 0.5)');
             holoGrad.addColorStop(1, 'transparent');
 
             ctx.fillStyle = holoGrad;
-            ctx.fillRect(35, 75, canvas.width - 70, 350);
+            ctx.fillRect(40, 85, canvas.width - 80, 430);
             ctx.restore();
         }
 
+        // ワザエリア
         ctx.fillStyle = '#fef9e7';
-        ctx.fillRect(35, 440, canvas.width - 70, 175);
+        ctx.fillRect(40, 535, canvas.width - 80, 175);
         ctx.strokeStyle = '#f5b041';
         ctx.lineWidth = 2;
-        ctx.strokeRect(35, 440, canvas.width - 70, 175);
+        ctx.strokeRect(40, 535, canvas.width - 80, 175);
 
+        // ワザ情報
         ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 22px sans-serif';
-        ctx.fillText(card.moveName, 50, 475);
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText(card.moveName, 55, 575);
 
         ctx.fillStyle = '#c0392b';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText(card.damage, canvas.width - 110, 475);
+        ctx.font = 'bold 27px sans-serif';
+        ctx.fillText(card.damage, canvas.width - 125, 575);
 
         ctx.fillStyle = '#566573';
-        ctx.font = '15px sans-serif';
+        ctx.font = '16px sans-serif';
         let words = card.moveDesc;
         let line = "";
-        let lineY = 510;
+        let lineY = 610;
         for(let i = 0; i < words.length; i++) {
             line += words[i];
-            if(line.length >= 18 || i === words.length - 1) {
-                ctx.fillText(line, 50, lineY);
+            if(line.length >= 19 || i === words.length - 1) {
+                ctx.fillText(line, 55, lineY);
                 line = "";
-                lineY += 22;
+                lineY += 24;
             }
         }
 
+        // 下部情報
         ctx.fillStyle = '#7f8c8d';
-        ctx.font = '13px sans-serif';
-        ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 45, 645);
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 50, 745);
 
         const nextBtn = document.getElementById('nextBtn');
-        if (currentCardIndex === openedBatchCards.length - 1) {
+        if (!isViewingDexCard && currentCardIndex === openedBatchCards.length - 1) {
             nextBtn.innerText = "メニューへ";
         } else {
             nextBtn.innerText = "次へ ▶";
@@ -756,6 +755,11 @@
 
     function nextCard() {
         playSE('select');
+        if (isViewingDexCard) {
+            goToMenu(); // 図鑑からの個別のときはメニューや図鑑に戻る挙動
+            return;
+        }
+
         if (currentCardIndex < openedBatchCards.length - 1) {
             currentCardIndex++;
             displayCurrentCard();
@@ -767,6 +771,11 @@
 
     function prevCard() {
         playSE('select');
+        if (isViewingDexCard) {
+            openDex();
+            return;
+        }
+
         if (currentCardIndex > 0) {
             currentCardIndex--;
             displayCurrentCard();
@@ -775,7 +784,7 @@
     }
 
     // ==========================================
-    // 3Dカード操作
+    // 3Dカード操作（360度鑑賞）
     // ==========================================
     const cardObj = document.getElementById('card3dObject');
     const container = document.getElementById('cardContainer');
@@ -842,9 +851,10 @@
         cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
     }
 
+    // ==========================================
+    // 獲得カード一覧 (図鑑) & タップして個別360度鑑賞
+    // ==========================================
     function openDex() {
-        stopOtherBGM();
-        startOtherBGM('dex');
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         grid.innerHTML = '';
@@ -854,18 +864,32 @@
             return;
         }
 
-        collectionDex.forEach(card => {
+        collectionDex.forEach((card, index) => {
             const item = document.createElement('div');
             item.className = 'dex-item';
             
             const img = document.createElement('img');
             const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 150; tmpCanvas.height = 200;
+            tmpCanvas.width = 150; tmpCanvas.height = 230;
             const tCtx = tmpCanvas.getContext('2d');
-            tCtx.drawImage(card.image, 0, 0, 150, 200);
+            tCtx.drawImage(card.image, 0, 0, 150, 230);
             img.src = tmpCanvas.toDataURL();
 
             item.appendChild(img);
+            
+            // タップされたら1枚表示で360度鑑賞モードへ
+            item.onclick = () => {
+                playSE('select');
+                isViewingDexCard = true;
+                openedBatchCards = [card]; // 1枚だけの配列にする
+                currentCardIndex = 0;
+                document.getElementById('resultActionBar').style.display = 'flex';
+                document.getElementById('nextBtn').innerText = "図鑑へ戻る";
+                showScreen('cardResultScreen');
+                displayCurrentCard();
+                resetCardFlip();
+            };
+
             grid.appendChild(item);
         });
     }
