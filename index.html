@@ -260,7 +260,7 @@
 <body>
 
     <!-- 1. タイトル画面 -->
-    <div id="titleScreen" class="screen active">
+    <div id="titleScreen" class="screen active" onclick="goToMenu()">
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
@@ -391,20 +391,6 @@
     function goToMenu() { showScreen('menuScreen'); }
     function startPackSelect() { showScreen('packSelectScreen'); }
 
-    // --- タイトル画面のタップ/クリック強制対応 ---
-    window.addEventListener('DOMContentLoaded', function() {
-        const titleScreen = document.getElementById('titleScreen');
-        if (titleScreen) {
-            // タッチとクリックの両方で確実にメニューへ遷移させる
-            const handleTitleTap = function(e) {
-                e.stopPropagation();
-                goToMenu();
-            };
-            titleScreen.addEventListener('click', handleTitleTap);
-            titleScreen.addEventListener('touchend', handleTitleTap);
-        }
-    });
-
     function selectPack(type) {
         currentPackType = type;
         const items = document.querySelectorAll('.pack-item');
@@ -487,7 +473,7 @@
         showScreen('openingScreen');
     }
 
- // 摩訶不思議・カオス文章自動生成パーツ
+    // 摩訶不思議・カオス文章自動生成パーツ
     const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙的", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
     const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
     const attackParts = ["未知へのパルプンテ","かめはめ波", "ビックバンアタック","抱きしめろ","クソガキが！","バナナでも食べてろ！","韓国へ","チョコよこせ！","そして歩き出せ","一歩ずつ","奏でろ","ただただやかましい","ぶち上げろ","唐突なマントル", "全方位お昼寝", "無限エントロピー", "意味不明の突撃", "エモさの過剰摂取", "真夜中の冷蔵庫漁り"];
@@ -498,7 +484,7 @@
         "ポケットの中で勝手に発酵し、ほのかに甘い香りがする。",
         "周囲の空気を完全に無視してマイペースに浮遊する。",
         "意思を持つかのように、勝手にスマホの画面を連打する。",
-        "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。"
+        "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。",
         "お前のターン中に俺は踊りだす",
         "俺のカードが光だし、お前は叫び出す！目が～目が～！",
         "気になるあいつにDMをする事となるが砕け散る",
@@ -521,7 +507,7 @@
         "何をだよ！",
         "もうすぐ晴れるよ！",
         "もうすぐ腫れるよ！",
-        "もうすぐ貼れるよ！",
+        "もうすぐ貼れるよ！"
     ];
 
     function generateChaosCardData() {
