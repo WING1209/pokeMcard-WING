@@ -92,6 +92,7 @@
             cursor: pointer;
             border: 3px solid #fff;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
         }
         .pack-item.selected {
             transform: scale(1.08);
@@ -136,14 +137,17 @@
             background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
             box-shadow: 0 0 30px #ffff00, 0 0 60px #00ffff;
             border-color: #ffffff;
+            animation: pulseRainbow 0.8s infinite;
         }
+        @keyframes pulseRainbow { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.08); filter: hue-rotate(360deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
+
         .ripping {
             transform: scale(1.3) rotate(20deg) !important;
             opacity: 0 !important;
             transition: all 0.5s ease-out !important;
         }
 
-        /* 3Dカードフリップ＆回転コンテナ（なめらかな操作対応のためtransition削除） */
+        /* 3Dカードコンテナ */
         .card-view-container {
             perspective: 1200px;
             width: 280px;
@@ -171,9 +175,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.7);
         }
-        .card-front {
-            background: #111;
-        }
+        .card-front { background: #111; }
         .card-front canvas {
             width: 100%;
             height: 100%;
@@ -240,15 +242,15 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 280px;
-            gap: 10px;
+            max-width: 320px;
+            gap: 8px;
         }
         .btn-sub, .btn-main {
             border: none;
-            padding: 10px 15px;
+            padding: 10px 12px;
             border-radius: 20px;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             flex: 1;
         }
@@ -256,8 +258,6 @@
         .btn-main { background: #e67e22; color: #fff; }
         
         #folderInput { display: none; }
-
-        /* 花火エフェクト用Canvas */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -272,11 +272,11 @@
     <canvas id="particleCanvas"></canvas>
 
     <!-- 1. タイトル画面 -->
-    <div id="titleScreen" class="screen active" onclick="goToMenu()">
+    <div id="titleScreen" class="screen active" onclick="handleTitleClick()">
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.0 (500枚ランダム＆なめらか3D)</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver4.0 (BGM & 詳細SEシステム)</p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -286,9 +286,9 @@
     <div id="menuScreen" class="screen">
         <h2>メニュー</h2>
         <div style="display:flex; flex-direction:column; align-items:center; width:100%; justify-content:center; flex:1;">
-            <button class="menu-btn" onclick="startPackSelect()">① パック開封</button>
-            <button class="menu-btn" onclick="openDex()">② 獲得カード (図鑑)</button>
-            <button class="menu-btn" style="background:#7f8c8d;" onclick="goToTitle()">END (タイトルへ)</button>
+            <button class="menu-btn" onclick="playSE('select'); startPackSelect();">① パック開封</button>
+            <button class="menu-btn" onclick="playSE('select'); openDex();">② 獲得カード (図鑑)</button>
+            <button class="menu-btn" style="background:#7f8c8d;" onclick="playSE('select'); goToTitle();">END (タイトルへ)</button>
         </div>
         <div></div>
     </div>
@@ -298,9 +298,9 @@
         <h2 style="margin:5px 0;">パックを選択</h2>
         
         <div class="pack-container">
-            <div class="pack-item selected" style="background: linear-gradient(135deg, #3498db, #2980b9);" onclick="selectPack(1)">青パック<br>水</div>
-            <div class="pack-item" style="background: linear-gradient(135deg, #e74c3c, #c0392b);" onclick="selectPack(0)">赤パック<br>炎</div>
-            <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="selectPack(2)">緑パック<br>草</div>
+            <div class="pack-item selected" style="background: linear-gradient(135deg, #3498db, #2980b9);" onclick="playSE('select'); selectPack(1)">青パック<br>水</div>
+            <div class="pack-item" style="background: linear-gradient(135deg, #e74c3c, #c0392b);" onclick="playSE('select'); selectPack(0)">赤パック<br>炎</div>
+            <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="playSE('select'); selectPack(2)">緑パック<br>草</div>
         </div>
 
         <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (500枚以上対応)</div>
@@ -310,13 +310,12 @@
             <div id="packNameLabel" style="font-weight:bold; font-size:0.9rem;">青パック</div>
         </div>
 
-        <!-- フォルダ一括選択（webkitdirectory） -->
         <input type="file" id="folderInput" webkitdirectory directory multiple accept="image/*">
         
         <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-            <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="triggerFolderSelect()">📁 フォルダを選ぶ</button>
-            <button class="menu-btn" style="background:#e67e22; margin:4px 0;" id="openPackBtn" onclick="tryOpenPack()" disabled style="opacity:0.5;">✨ パックを開封する！(5枚)</button>
-            <button class="btn-sub" style="width:80%; max-width:260px; margin-top:4px;" onclick="goToMenu()">もどる</button>
+            <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="playSE('select'); triggerFolderSelect();">📁 フォルダを選ぶ</button>
+            <button class="menu-btn" style="background:#e67e22; margin:4px 0;" id="openPackBtn" onclick="tryOpenPack();" disabled style="opacity:0.5;">✨ パックを開封する！(5枚)</button>
+            <button class="btn-sub" style="width:80%; max-width:260px; margin-top:4px;" onclick="playSE('select'); goToMenu();">もどる</button>
         </div>
     </div>
 
@@ -331,11 +330,11 @@
         <div></div>
     </div>
 
-    <!-- 5. 獲得カード閲覧画面 (3D鑑賞 & 5枚連続開封) -->
+    <!-- 5. 獲得カード閲覧画面 -->
     <div id="cardResultScreen" class="screen">
         <div>
             <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★☆☆</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">↔️ 左右スワイプ: 次のカード / 👆 ドラッグ: 3D回転</p>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 3D回転</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -353,8 +352,9 @@
         </div>
 
         <div class="action-bar">
-            <button class="btn-sub" onclick="exitCardView()">もどる</button>
-            <button class="btn-main" id="nextOrFinishBtn" onclick="handleNextCardAction()">次のカード</button>
+            <button class="btn-sub" onclick="prevCard()">◀ 前へ</button>
+            <button class="btn-main" id="nextBtn" onclick="nextCard()">次へ ▶</button>
+            <button class="btn-sub" style="background:#7f8c8d;" onclick="playSE('select'); goToMenu();">メニュー</button>
         </div>
     </div>
 
@@ -363,11 +363,156 @@
         <h2 style="margin:5px 0;">獲得カード図鑑</h2>
         <div class="dex-grid" id="dexGrid"></div>
         <div style="width:90%; max-width:280px; text-align:center; margin-top:5px;">
-            <button class="btn-sub" style="width:100%;" onclick="goToMenu()">もどる</button>
+            <button class="btn-sub" style="width:100%;" onclick="playSE('select'); goToMenu();">もどる</button>
         </div>
     </div>
 
 <script>
+    // ==========================================
+    // BGM & 効果音 (Web Audio API 音声システム)
+    // ==========================================
+    let audioCtx = null;
+    let bgmInterval = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    // BGM再生システム（モード別）
+    function startBGM(mode) {
+        initAudio();
+        stopBGM();
+
+        let notes = [];
+        let speed = 300;
+        let wave = 'triangle';
+
+        if (mode === 'title') {
+            // タイトル画面BGM：わくわくする高めのアルペジオ
+            notes = [330, 392, 523, 659, 523, 392];
+            speed = 250;
+        } else if (mode === 'menu') {
+            // メニュー画面BGM：落ち着いたアドベンチャー調
+            notes = [220, 261.63, 329.63, 392, 329.63, 261.63];
+            speed = 350;
+            wave = 'sine';
+        } else if (mode === 'dex') {
+            // 獲得カード一覧（図鑑）BGM：神秘的で少しおしゃれなループ
+            notes = [293.66, 369.99, 440, 554.37, 440, 369.99];
+            speed = 400;
+            wave = 'sine';
+        }
+
+        let idx = 0;
+        bgmInterval = setInterval(() => {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = wave;
+                osc.frequency.setValueAtTime(notes[idx], audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (speed / 1000));
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + (speed / 1000));
+                idx = (idx + 1) % notes.length;
+            } catch(e) {}
+        }, speed);
+    }
+
+    function stopBGM() {
+        if (bgmInterval) {
+            clearInterval(bgmInterval);
+            bgmInterval = null;
+        }
+    }
+
+    // 効果音（SE）システム
+    function playSE(type, param = 0) {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        try {
+            if (type === 'select') {
+                // 各項目選択音
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(750, now + 0.05);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'expect') {
+                // パック開封前の期待度で変化する効果音 (param: 0=ノーマル, 1=高レア期待, 2=虹色最高レア)
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = param === 2 ? 'sawtooth' : (param === 1 ? 'triangle' : 'sine');
+                let baseFreq = param === 2 ? 880 : (param === 1 ? 660 : 440);
+                osc.frequency.setValueAtTime(baseFreq, now);
+                osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'rip') {
+                // 開封時の音（バリッ）
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            } else if (type === 'appear') {
+                // カード出現音（シュピーン！）
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'get') {
+                // 獲得時の音（キラキラジングル）
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
+                freqs.forEach((f, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + i * 0.06);
+                    gain.gain.setValueAtTime(0.1, now + i * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.2);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.2);
+                });
+            }
+        } catch(e) {}
+    }
+
+    function handleTitleClick() {
+        playSE('select');
+        startBGM('title');
+        goToMenu();
+    }
+
+    // ==========================================
+    // ゲーム本体のロジック
+    // ==========================================
     let currentPackType = 1;
     let loadedImageObjects = []; 
     let openedBatchCards = []; 
@@ -382,7 +527,6 @@
 
     let hasHighestRarityInBatch = false;
 
-    // 画面切り替え
     function showScreen(screenId) {
         try {
             const screens = document.querySelectorAll('.screen');
@@ -394,9 +538,18 @@
         }
     }
 
-    function goToTitle() { showScreen('titleScreen'); }
-    function goToMenu() { showScreen('menuScreen'); }
-    function startPackSelect() { showScreen('packSelectScreen'); }
+    function goToTitle() { 
+        startBGM('title');
+        showScreen('titleScreen'); 
+    }
+    function goToMenu() { 
+        startBGM('menu');
+        showScreen('menuScreen'); 
+    }
+    function startPackSelect() { 
+        startBGM('menu');
+        showScreen('packSelectScreen'); 
+    }
 
     function selectPack(type) {
         currentPackType = type;
@@ -415,7 +568,7 @@
         if(input) input.click();
     }
 
-    // ④ フォルダ内から最大500枚を自動ランダム選出して読み込み
+    // フォルダ読み込み (最大500枚ランダム選出)
     document.getElementById('folderInput').addEventListener('change', function(e) {
         let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
         if (files.length === 0) {
@@ -426,7 +579,6 @@
         const statusText = document.getElementById('folderStatusText');
         if(statusText) statusText.innerText = `📁 読み込み中... (全 ${files.length} 枚検出)`;
 
-        // 500枚以上ある場合はシャッフルしてランダムに500枚を選出
         if (files.length > 500) {
             files.sort(() => Math.random() - 0.5);
             files = files.slice(0, 500);
@@ -482,10 +634,12 @@
                 ripPack.classList.add('rainbow');
                 headerTitle.innerText = "✨ 激レア！虹色パック出現！！ ✨";
                 headerTitle.style.color = "#00ffff";
+                playSE('expect', 2); // 虹色パック最高期待度音
             } else {
                 ripPack.classList.remove('rainbow');
                 headerTitle.innerText = "パック開封！";
                 headerTitle.style.color = "#fff";
+                playSE('expect', 0); // 通常期待度音
             }
             ripPack.classList.remove('ripping');
         }
@@ -506,8 +660,6 @@
         "意思を持つかのように、勝手にスマホの画面を連打する。",
         "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。",
         "お前のターン中に俺は踊りだす",
-        "俺のカードが光だし、お前は叫び出す！目が～目が～！",
-        "あきらめたら負けるが、あきらめなかったら負けないかもしれないかもしれない",
         "私の戦闘力は53万です。",
         "相手のカードを全て燃やす事ができる！"
     ];
@@ -616,8 +768,8 @@
         return c.toDataURL('image/png');
     }
 
-    // ② パックを破る演出から、1枚目を開く
     function executeRip() {
+        playSE('rip'); // 開封時の音
         const ripObj = document.getElementById('ripPackObj');
         if(ripObj) ripObj.classList.add('ripping');
         setTimeout(function() {
@@ -635,7 +787,7 @@
         const card = openedBatchCards[currentCardIndex];
         const rarityHeader = document.getElementById('rarityHeader');
         if(rarityHeader) {
-            rarityHeader.innerText = `【 ${card.rarity} 】 (${currentCardIndex + 1} / 5枚)`;
+            rarityHeader.innerText = `【 ${card.rarity} 】 (${currentCardIndex + 1} / ${openedBatchCards.length}枚)`;
         }
         
         const canvas = document.getElementById('resultCanvas');
@@ -657,25 +809,35 @@
         rotX = 0; rotY = 0;
         if(cardObj) cardObj.style.transform = `rotateX(0deg) rotateY(0deg)`;
 
-        // ボタンのテキスト切り替え（5枚目のときは「完了」などにする）
-        const nextBtn = document.getElementById('nextOrFinishBtn');
+        // カード出現音 ＆ 獲得時の音
+        playSE('appear');
+        playSE('get');
+
+        const nextBtn = document.getElementById('nextBtn');
         if(nextBtn) {
             if(openedBatchCards.length === 1) {
-                nextBtn.style.display = 'none'; // 図鑑から開いた場合は「次のカード」ボタン非表示
+                nextBtn.style.display = 'none'; 
             } else {
                 nextBtn.style.display = 'block';
-                nextBtn.innerText = (currentCardIndex === 4) ? "開封完了！" : "次のカード";
+                nextBtn.innerText = (currentCardIndex === openedBatchCards.length - 1) ? "開封完了 🏁" : "次へ ▶";
             }
         }
 
-        // ② 最高レア度（UR / SSR）なら花火パーティクル発動
         if(card.rarity === "UR" || card.rarity === "SSR") {
             triggerFireworks();
         }
     }
 
-    // 次のカードへ進むボタン
-    function handleNextCardAction() {
+    function prevCard() {
+        playSE('select');
+        if(openedBatchCards.length <= 1) return;
+        currentCardIndex = (currentCardIndex - 1 + openedBatchCards.length) % openedBatchCards.length;
+        renderCurrentCardView();
+    }
+
+    function nextCard() {
+        playSE('select');
+        if(openedBatchCards.length <= 1) return;
         if(currentCardIndex < openedBatchCards.length - 1) {
             currentCardIndex++;
             renderCurrentCardView();
@@ -684,8 +846,8 @@
         }
     }
 
-    // ③ 獲得カード図鑑からタップした選択カードも360度見られる仕様
     function openDex() {
+        startBGM('dex'); // 図鑑専用BGM
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         if(!grid) return;
@@ -701,7 +863,8 @@
             item.className = 'dex-item';
             item.innerHTML = `<img src="${card.dataUrl}" alt="card">`;
             item.onclick = function() {
-                openedBatchCards = [card]; // 1枚だけのリストにしてビューアへ
+                playSE('select');
+                openedBatchCards = [card]; 
                 currentCardIndex = 0;
                 showCardResultScreen();
             };
@@ -709,12 +872,8 @@
         });
     }
 
-    function exitCardView() { 
-        goToMenu(); 
-    }
-
     // ==========================================
-    // ① ①・③ なめらかな3D回転 ＆ 慣性 (Momentum) ＆ スワイプ操作
+    // 3D回転 ＆ 慣性 ＆ スワイプ操作
     // ==========================================
     const cardContainer = document.getElementById('cardContainer');
     const cardObj = document.getElementById('card3dObject');
@@ -763,7 +922,6 @@
             if(!isDragging) return;
             isDragging = false;
 
-            // ① 慣性アニメーションでなめらかに減速
             function applyInertia() {
                 if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) return;
                 velocityX *= 0.90;
@@ -778,21 +936,19 @@
             }
             animationFrameId = requestAnimationFrame(applyInertia);
 
-            // 複数枚（パック開封中）のときのスワイプで次/前のカード切り替え
             let diff = e.clientX - touchStartX;
             if(Math.abs(diff) > 60 && Math.abs(rotY) < 30 && openedBatchCards.length > 1) {
                 if(diff < 0) {
-                    currentCardIndex = (currentCardIndex + 1) % openedBatchCards.length;
+                    nextCard();
                 } else {
-                    currentCardIndex = (currentCardIndex - 1 + openedBatchCards.length) % openedBatchCards.length;
+                    prevCard();
                 }
-                renderCurrentCardView();
             }
         });
     }
 
     // ==========================================
-    // ② 最高レア(UR/SSR)用 花火パーティクルシステム
+    // 最高レア(UR/SSR)用 花火パーティクル
     // ==========================================
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
@@ -833,7 +989,7 @@
         particles.forEach(p => {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.2; // 重力
+            p.vy += 0.2; 
             p.alpha -= 0.02;
 
             ctx.save();
