@@ -64,15 +64,14 @@
             background: linear-gradient(135deg, #e74c3c, #f39c12);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 14px 20px;
             font-size: 1.1rem;
             font-weight: bold;
             border-radius: 30px;
             margin: 10px 0;
-            width: 80%;
-            max-width: 260px;
+            width: 85%;
+            max-width: 280px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            cursor: pointer;
         }
 
         .pack-container {
@@ -81,8 +80,8 @@
             margin: 10px 0;
         }
         .pack-item {
-            width: 80px;
-            height: 110px;
+            width: 85px;
+            height: 115px;
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -90,10 +89,8 @@
             justify-content: center;
             font-weight: bold;
             font-size: 0.85rem;
-            cursor: pointer;
             border: 3px solid #fff;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transition: transform 0.1s;
         }
         .pack-item.selected {
             transform: scale(1.08);
@@ -118,10 +115,9 @@
             touch-action: none;
         }
         
-        /* スワイプ開封対応パック本体 */
         .rip-pack {
-            width: 190px;
-            height: 270px;
+            width: 200px;
+            height: 280px;
             background: linear-gradient(135deg, #e74c3c, #8e44ad);
             border-radius: 15px;
             border: 4px solid #f1c40f;
@@ -131,9 +127,7 @@
             font-size: 1.1rem;
             font-weight: bold;
             text-align: center;
-            cursor: grab;
             box-shadow: 0 0 20px #f1c40f;
-            transition: transform 0.1s ease-out;
             will-change: transform;
         }
         
@@ -156,14 +150,12 @@
             transition: all 0.4s ease-out !important;
         }
 
-        /* 3Dカードコンテナ */
         .card-view-container {
             perspective: 1400px;
-            width: 260px;
-            height: 400px;
+            width: 270px;
+            height: 410px;
             margin: 5px auto;
             position: relative;
-            cursor: grab;
             touch-action: none;
         }
         .card-3d-object {
@@ -218,8 +210,8 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             width: 100%;
-            max-width: 340px;
-            height: 62vh;
+            max-width: 350px;
+            height: 64vh;
             overflow-y: auto;
             padding: 8px;
             background: rgba(255,255,255,0.05);
@@ -230,14 +222,11 @@
             border-radius: 6px;
             overflow: hidden;
             border: 2px solid #444;
-            cursor: pointer;
-            aspect-ratio: 260/400;
+            aspect-ratio: 270/410;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.1s;
         }
-        .dex-item:active { transform: scale(0.95); }
         .dex-item img {
             width: 100%;
             height: 100%;
@@ -248,16 +237,15 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 320px;
-            gap: 8px;
+            max-width: 330px;
+            gap: 10px;
         }
         .btn-sub, .btn-main {
             border: none;
-            padding: 10px 12px;
+            padding: 12px 14px;
             border-radius: 20px;
             font-weight: bold;
-            font-size: 0.85rem;
-            cursor: pointer;
+            font-size: 0.9rem;
             flex: 1;
         }
         .btn-sub { background: #34495e; color: #fff; }
@@ -273,7 +261,6 @@
             z-index: 9999;
         }
 
-        /* 画面全体の激しい白フラッシュ用レイヤー */
         #flashOverlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -295,8 +282,8 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0 </p>
-            <div class="blink-start">▶ スタートをタップ</div>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.2</p>
+            <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
     </div>
@@ -305,9 +292,9 @@
     <div id="menuScreen" class="screen">
         <h2>メニュー</h2>
         <div style="display:flex; flex-direction:column; align-items:center; width:100%; justify-content:center; flex:1;">
-            <button class="menu-btn" onclick="playSE('select'); startPackSelect();">① パック開封</button>
-            <button class="menu-btn" onclick="playSE('select'); openDex();">② 獲得カード (図鑑)</button>
-            <button class="menu-btn" style="background:#7f8c8d;" onclick="playSE('select'); goToTitle();">END (タイトルへ)</button>
+            <button class="menu-btn" id="menuPackBtn">① パック開封</button>
+            <button class="menu-btn" id="menuDexBtn">② 獲得カード (図鑑)</button>
+            <button class="menu-btn" id="menuTitleBtn" style="background:#7f8c8d;">END (タイトルへ)</button>
         </div>
         <div></div>
     </div>
@@ -317,12 +304,12 @@
         <h2 style="margin:5px 0;">パックを選択</h2>
         
         <div class="pack-container">
-            <div class="pack-item selected" style="background: linear-gradient(135deg, #3498db, #2980b9);" onclick="playSE('select'); selectPack(1)">青パック<br>水</div>
-            <div class="pack-item" style="background: linear-gradient(135deg, #e74c3c, #c0392b);" onclick="playSE('select'); selectPack(0)">赤パック<br>炎</div>
-            <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="playSE('select'); selectPack(2)">緑パック<br>草</div>
+            <div class="pack-item selected" id="packBlue" style="background: linear-gradient(135deg, #3498db, #2980b9);">青パック<br>水</div>
+            <div class="pack-item" id="packRed" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">赤パック<br>炎</div>
+            <div class="pack-item" id="packGreen" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">緑パック<br>草</div>
         </div>
 
-        <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (200枚まで対応)</div>
+        <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (200枚まで)</div>
 
         <div style="text-align:center; margin: 5px 0;">
             <span style="font-size: 2.5rem;">🎁</span>
@@ -332,15 +319,15 @@
         <input type="file" id="folderInput" webkitdirectory directory multiple accept="image/*">
         
         <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-            <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="playSE('select'); triggerFolderSelect();">📁 フォルダを選ぶ</button>
-            <button class="menu-btn" style="background:#e67e22; margin:4px 0;" id="openPackBtn" onclick="tryOpenPack();">✨ パックを開封する！(5枚)</button>
-            <button class="btn-sub" style="width:80%; max-width:260px; margin-top:4px;" onclick="playSE('select'); goToMenu();">もどる</button>
+            <button class="menu-btn" id="selectFolderBtn" style="background:#27ae60; margin:4px 0;">📁 フォルダを選ぶ</button>
+            <button class="menu-btn" id="openPackBtn" style="background:#e67e22; margin:4px 0;" disabled style="opacity:0.5;">✨ パックを開封する！(5枚)</button>
+            <button class="btn-sub" id="packBackBtn" style="width:85%; max-width:280px; margin-top:4px;">もどる</button>
         </div>
     </div>
 
-    <!-- 4. 開封演出画面 (スワイプ＆タップ両対応) -->
+    <!-- 4. 開封演出画面 -->
     <div id="openingScreen" class="screen">
-        <h2 id="openingHeaderTitle" style="margin:0;">パック開封！</h2>
+        <h2 style="margin:0;">パック開封！</h2>
         <div style="flex:1; display:flex; align-items:center; justify-content:center;">
             <div class="rip-pack" id="ripPackObj">
                 <span id="packLabelText">スワイプ or タップで<br>開封！！</span>
@@ -360,33 +347,33 @@
             <div class="card-3d-object" id="card3dObject">
                 <div class="card-edge"></div>
                 <div class="card-face card-front">
-                    <canvas class="card-canvas" id="resultCanvas" width="520" height="800"></canvas>
+                    <canvas class="card-canvas" id="resultCanvas" width="540" height="820"></canvas>
                 </div>
                 <div class="card-face card-back">
-                    <canvas class="card-canvas" id="backCanvas" width="520" height="800"></canvas>
+                    <canvas class="card-canvas" id="backCanvas" width="540" height="820"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="action-bar" id="resultActionBar">
-            <button class="btn-sub" onclick="prevCard()">◀ 前へ</button>
-            <button class="btn-main" id="nextBtn" onclick="nextCard()">次へ ▶</button>
-            <button class="btn-sub" style="background:#7f8c8d;" onclick="playSE('select'); goToMenu();">メニュー</button>
+            <button class="btn-sub" id="prevCardBtn">◀ 前へ</button>
+            <button class="btn-main" id="nextCardBtn">次へ ▶</button>
+            <button class="btn-sub" id="resultMenuBtn" style="background:#7f8c8d;">メニュー</button>
         </div>
     </div>
 
     <!-- 6. 獲得カード一覧 (図鑑) 画面 -->
     <div id="dexScreen" class="screen">
-        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで360度鑑賞)</h2>
+        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで鑑賞)</h2>
         <div class="dex-grid" id="dexGrid"></div>
         <div style="width:90%; max-width:280px; text-align:center; margin-top:5px;">
-            <button class="btn-sub" style="width:100%;" onclick="playSE('select'); goToMenu();">もどる</button>
+            <button class="btn-sub" id="dexBackBtn" style="width:100%;">もどる</button>
         </div>
     </div>
 
 <script>
     // ==========================================
-    // タイトルBGM制御
+    // タイトルBGM制御 (エラーでも絶対に画面が進むように分離)
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
@@ -396,12 +383,13 @@
     const titleScreenEl = document.getElementById('titleScreen');
     
     function handleTitleInteraction(e) {
-        e.preventDefault();
-        titleBgm.play().then(() => {
-            goToMenu();
-        }).catch(err => {
-            goToMenu();
-        });
+        if (e) e.preventDefault();
+        
+        // 音声再生トライ（ブロックされても画面遷移を邪魔しないようにする）
+        titleBgm.play().catch(() => {});
+        
+        // 確実にメニュー画面へジャンプ
+        goToMenu();
     }
 
     titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
@@ -412,9 +400,6 @@
         titleBgm.currentTime = 0;
     }
 
-    // ==========================================
-    // カードゲームらしいド派手な効果音システム (SE)
-    // ==========================================
     function playSE(type) {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -424,21 +409,18 @@
             const gain = ctx.createGain();
 
             if (type === 'jakin') {
-                // カードゲームらしい「ジャキーン！」という高音メタルサウンド
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(2400, now + 0.15);
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
             } else if (type === 'firework') {
-                // ドーンという重低音爆発
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(160, now);
                 osc.frequency.exponentialRampToValueAtTime(25, now + 0.8);
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
             } else if (type === 'ur_rare') {
-                // UR獲得時の超ド派手ファンファーレ
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(440, now);
                 osc.frequency.setValueAtTime(554.37, now + 0.12);
@@ -448,7 +430,6 @@
                 gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
             } else if (type === 'rip') {
-                // パックを破る豪快な音
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(250, now);
                 osc.frequency.linearRampToValueAtTime(1400, now + 0.15);
@@ -456,7 +437,6 @@
                 gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
             } else {
-                // 通常選択音
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(700, now);
                 osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
@@ -471,7 +451,7 @@
     }
 
     // ==========================================
-    // カオス文章パーツ
+    // データ & カオス文章
     // ==========================================
     const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙ティブな", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
     const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
@@ -511,129 +491,4 @@
 
     function showScreen(screenId) {
         const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(screenId);
-        if (target) target.classList.add('active');
-    }
-
-    function goToTitle() { 
-        stopTitleBGM();
-        showScreen('titleScreen'); 
-    }
-    function goToMenu() { 
-        if(titleBgm.paused) {
-            titleBgm.play().catch(e => {});
-        }
-        showScreen('menuScreen'); 
-    }
-    function startPackSelect() { 
-        showScreen('packSelectScreen'); 
-    }
-
-    function selectPack(type) {
-        currentPackType = type;
-        const items = document.querySelectorAll('.pack-item');
-        items.forEach((el, idx) => {
-            if(idx === type) el.classList.add('selected');
-            else el.classList.remove('selected');
-        });
-        const names = ["赤パック (炎)", "青パック (水)", "緑パック (草)"];
-        const label = document.getElementById('packNameLabel');
-        if(label) label.innerText = names[type];
-    }
-
-    function triggerFolderSelect() {
-        const input = document.getElementById('folderInput');
-        if(input) input.click();
-    }
-
-    document.getElementById('folderInput').addEventListener('change', function(e) {
-        let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
-        const statusText = document.getElementById('folderStatusText');
-        if (files.length === 0) return;
-
-        if (files.length > 200) {
-            files.sort(() => Math.random() - 0.5);
-            files = files.slice(0, 200);
-            if(statusText) statusText.innerText = `📁 全 ${files.length}枚以上からランダムに200枚を選出中...`;
-        } else {
-            if(statusText) statusText.innerText = `📁 全 ${files.length}枚を読み込み中...`;
-        }
-        
-        loadedImageObjects = [];
-        let loadedCount = 0;
-        const totalToLoad = files.length;
-
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    loadedImageObjects.push(img);
-                    loadedCount++;
-                    if(statusText) statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
-                    
-                    const openBtn = document.getElementById('openPackBtn');
-                    if(openBtn) {
-                        openBtn.disabled = false;
-                        openBtn.style.opacity = '1';
-                    }
-                };
-                img.onerror = function() { loadedCount++; };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-
-    function getFallbackImage() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 520; canvas.height = 800;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(0, 0, 520, 800);
-        ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.fillText("Pocket Card", 160, 400);
-        const img = new Image();
-        img.src = canvas.toDataURL();
-        return img;
-    }
-
-    function tryOpenPack() {
-        if (loadedImageObjects.length === 0) {
-            loadedImageObjects.push(getFallbackImage());
-        }
-        generateBatchCards();
-
-        const packObj = document.getElementById('ripPackObj');
-        const packLabel = document.getElementById('packLabelText');
-        
-        if (hasHighRarityInBatch) {
-            packObj.classList.add('rainbow-pack');
-            packLabel.innerHTML = "✨ 激レア封入！<br>スワイプで開封！！";
-        } else {
-            packObj.classList.remove('rainbow-pack');
-            packLabel.innerHTML = "スワイプ or タップで<br>開封！！";
-        }
-
-        showScreen('openingScreen');
-    }
-
-    // ==========================================
-    // スワイプ＆タップによる開封アクション
-    // ==========================================
-    const packObj = document.getElementById('ripPackObj');
-    let packStartX = 0, packStartY = 0;
-    let isPackDragging = false;
-
-    packObj.addEventListener('pointerdown', (e) => {
-        isPackDragging = true;
-        packStartX = e.clientX;
-        packStartY = e.clientY;
-    });
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isPackDragging) return;
-        let dx = e.clientX - packStartX;
-        let dy
+        screens.forEach(s => s
