@@ -29,6 +29,7 @@
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 2;
         }
         .screen.active {
             display: flex;
@@ -133,21 +134,13 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
         
-        .rip-pack.rainbow {
-            background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
-            box-shadow: 0 0 30px #ffff00, 0 0 60px #00ffff;
-            border-color: #ffffff;
-            animation: pulseRainbow 0.8s infinite;
-        }
-        @keyframes pulseRainbow { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.08); filter: hue-rotate(360deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
-
         .ripping {
             transform: scale(1.3) rotate(20deg) !important;
             opacity: 0 !important;
             transition: all 0.5s ease-out !important;
         }
 
-        /* 縦長 ＆ 厚みを持たせた3Dカードコンテナ */
+        /* 3Dカードコンテナ（厚み対応） */
         .card-view-container {
             perspective: 1400px;
             width: 260px;
@@ -208,8 +201,6 @@
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.1);
         }
-
-        /* 3Dカードの厚み（側面エッジ）表現 */
         .card-edge {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -243,9 +234,7 @@
             justify-content: center;
             transition: transform 0.1s;
         }
-        .dex-item:active {
-            transform: scale(0.95);
-        }
+        .dex-item:active { transform: scale(0.95); }
         .dex-item img {
             width: 100%;
             height: 100%;
@@ -272,12 +261,14 @@
         .btn-main { background: #e67e22; color: #fff; }
         
         #folderInput { display: none; }
+        
+        /* パーティクル（花火）用Canvasを最前面に配置 */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             pointer-events: none;
-            z-index: 999;
+            z-index: 9999;
         }
     </style>
 </head>
@@ -290,7 +281,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.2 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -344,22 +335,19 @@
         <div></div>
     </div>
 
-    <!-- 5. 獲得カード閲覧画面 -->
+    <!-- 5. 獲得カード閲覧画面 (360度鑑賞) -->
     <div id="cardResultScreen" class="screen">
         <div>
-            <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★</div>
+            <div id="rarityHeader" style="font-size:1.2rem; font-weight:bold; color:#f1c40f; text-align:center;">★</div>
             <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 タップで裏返る</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
             <div class="card-3d-object" id="card3dObject">
-                <!-- 厚み（側面エッジ） -->
                 <div class="card-edge"></div>
-                <!-- 表面 -->
                 <div class="card-face card-front">
                     <canvas class="card-canvas" id="resultCanvas" width="520" height="800"></canvas>
                 </div>
-                <!-- 裏面 -->
                 <div class="card-face card-back">
                     <h3>🌀 カオス生態メモ</h3>
                     <p id="cardBackFlavor">ここにカオスな文章が表示されます。</p>
@@ -376,7 +364,7 @@
 
     <!-- 6. 獲得カード一覧 (図鑑) 画面 -->
     <div id="dexScreen" class="screen">
-        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで鑑賞)</h2>
+        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで360度鑑賞)</h2>
         <div class="dex-grid" id="dexGrid"></div>
         <div style="width:90%; max-width:280px; text-align:center; margin-top:5px;">
             <button class="btn-sub" style="width:100%;" onclick="playSE('select'); goToMenu();">もどる</button>
@@ -385,7 +373,7 @@
 
 <script>
     // ==========================================
-    // タイトルBGM (タイトル・メニュー画面のみ)
+    // タイトルBGM制御
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
@@ -411,7 +399,9 @@
         titleBgm.currentTime = 0;
     }
 
-    // 効果音 (SE) システム
+    // ==========================================
+    // 効果音 (SE) & 派手な爆発・花火サウンド
+    // ==========================================
     function playSE(type) {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -419,13 +409,34 @@
             const now = ctx.currentTime;
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, now);
-            osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
-            gain.gain.setValueAtTime(0.08, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+            if (type === 'firework') {
+                // 花火のドーンという重低音＋高音スパーク
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            } else if (type === 'ur_rare') {
+                // UR獲得時の神々しいファンファーレ音
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                osc.frequency.setValueAtTime(1046.50, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+            } else {
+                // 通常の選択音
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            }
+
             osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(now); osc.stop(now + 0.05);
+            osc.start(now); osc.stop(now + (type === 'firework' ? 0.6 : (type === 'ur_rare' ? 0.7 : 0.05)));
         } catch(e) {}
     }
 
@@ -459,7 +470,7 @@
     let openedBatchCards = []; 
     let currentCardIndex = 0;
     let collectionDex = [];
-    let isViewingDexCard = false; // 図鑑からの個別鑑賞モード判定
+    let isViewingDexCard = false;
 
     try {
         collectionDex = JSON.parse(localStorage.getItem('pocket_mon_dex') || '[]');
@@ -476,7 +487,6 @@
 
     function goToTitle() { 
         stopTitleBGM();
-        // タイトル画面の時だけBGM再生用イベントを再有効化
         showScreen('titleScreen'); 
     }
     function goToMenu() { 
@@ -567,13 +577,13 @@
     }
 
     function executeRip() {
-        playSE('rip');
+        playSE('select');
         const packObj = document.getElementById('ripPackObj');
         packObj.classList.add('ripping');
 
         setTimeout(() => {
             packObj.classList.remove('ripping');
-            stopTitleBGM(); // パック開封以降はBGMを止めて演出に集中
+            stopTitleBGM(); 
             generateBatchCards();
             currentCardIndex = 0;
             isViewingDexCard = false;
@@ -584,7 +594,7 @@
     }
 
     // ==========================================
-    // ポケカ風レア度（★, ★★, ★★★, UR）の抽選
+    // レア度抽選
     // ==========================================
     function generateBatchCards() {
         openedBatchCards = [];
@@ -621,7 +631,7 @@
     }
 
     // ==========================================
-    // ポケカ風フレーム ＆ 派手なホロ・UR演出描画
+    // 描画 ＆ レア演出発火
     // ==========================================
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
@@ -629,6 +639,15 @@
         document.getElementById('cardBackFlavor').innerText = `${card.name}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n\n${card.moveDesc}`;
 
         renderCardCanvas(card, 0, 0);
+
+        // レアカードが出たときの花火演出
+        if (card.rarity === "UR") {
+            playSE('ur_rare');
+            triggerFireworks('rainbow');
+        } else if (card.rarity === "★★★") {
+            playSE('firework');
+            triggerFireworks('gold');
+        }
     }
 
     function renderCardCanvas(card, rotX = 0, rotY = 0) {
@@ -636,7 +655,6 @@
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // レア度に応じた豪華なフレーム背景
         if (card.rarity === "UR") {
             const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradFrame.addColorStop(0, '#ff007f');
@@ -657,11 +675,9 @@
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
 
-        // 内部背景
         ctx.fillStyle = '#fdfefe';
         ctx.fillRect(22, 22, canvas.width - 44, canvas.height - 44);
 
-        // 上部ヘッダー（名前 ＆ HP）
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 28px sans-serif';
         if(card.name.length > 10) ctx.font = 'bold 22px sans-serif';
@@ -671,7 +687,6 @@
         ctx.font = 'bold 25px sans-serif';
         ctx.fillText(`HP ${card.hp}`, canvas.width - 150, 62);
 
-        // タイプアイコン
         ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
         ctx.beginPath();
         ctx.arc(canvas.width - 60, 54, 18, 0, Math.PI * 2);
@@ -682,7 +697,6 @@
         ctx.fillText(card.type, canvas.width - 60, 60);
         ctx.textAlign = 'left';
 
-        // イラストウィンドウ (さらに縦長スリムに)
         ctx.strokeStyle = '#d35400';
         ctx.lineWidth = 4;
         ctx.strokeRect(40, 85, canvas.width - 80, 430);
@@ -691,7 +705,6 @@
             ctx.drawImage(card.image, 42, 87, canvas.width - 84, 426);
         }
 
-        // ★★★★ / UR のときの派手なホログラム・レインボー光沢演出
         if (card.rarity === "★★★" || card.rarity === "UR") {
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
@@ -710,14 +723,12 @@
             ctx.restore();
         }
 
-        // ワザエリア
         ctx.fillStyle = '#fef9e7';
         ctx.fillRect(40, 535, canvas.width - 80, 175);
         ctx.strokeStyle = '#f5b041';
         ctx.lineWidth = 2;
         ctx.strokeRect(40, 535, canvas.width - 80, 175);
 
-        // ワザ情報
         ctx.fillStyle = '#2c3e50';
         ctx.font = 'bold 24px sans-serif';
         ctx.fillText(card.moveName, 55, 575);
@@ -740,7 +751,6 @@
             }
         }
 
-        // 下部情報
         ctx.fillStyle = '#7f8c8d';
         ctx.font = '14px sans-serif';
         ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 50, 745);
@@ -748,6 +758,8 @@
         const nextBtn = document.getElementById('nextBtn');
         if (!isViewingDexCard && currentCardIndex === openedBatchCards.length - 1) {
             nextBtn.innerText = "メニューへ";
+        } else if (isViewingDexCard) {
+            nextBtn.innerText = "図鑑へ戻る";
         } else {
             nextBtn.innerText = "次へ ▶";
         }
@@ -756,7 +768,7 @@
     function nextCard() {
         playSE('select');
         if (isViewingDexCard) {
-            goToMenu(); // 図鑑からの個別のときはメニューや図鑑に戻る挙動
+            openDex();
             return;
         }
 
@@ -784,7 +796,7 @@
     }
 
     // ==========================================
-    // 3Dカード操作（360度鑑賞）
+    // 3Dカード操作 (360度鑑賞)
     // ==========================================
     const cardObj = document.getElementById('card3dObject');
     const container = document.getElementById('cardContainer');
@@ -852,7 +864,7 @@
     }
 
     // ==========================================
-    // 獲得カード一覧 (図鑑) & タップして個別360度鑑賞
+    // 獲得カード一覧 (図鑑) & 個別360度鑑賞
     // ==========================================
     function openDex() {
         showScreen('dexScreen');
@@ -864,7 +876,7 @@
             return;
         }
 
-        collectionDex.forEach((card, index) => {
+        collectionDex.forEach((card) => {
             const item = document.createElement('div');
             item.className = 'dex-item';
             
@@ -877,14 +889,13 @@
 
             item.appendChild(img);
             
-            // タップされたら1枚表示で360度鑑賞モードへ
+            // タップされたら1枚表示の360度鑑賞モードへ
             item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
-                openedBatchCards = [card]; // 1枚だけの配列にする
+                openedBatchCards = [card]; 
                 currentCardIndex = 0;
                 document.getElementById('resultActionBar').style.display = 'flex';
-                document.getElementById('nextBtn').innerText = "図鑑へ戻る";
                 showScreen('cardResultScreen');
                 displayCurrentCard();
                 resetCardFlip();
@@ -894,15 +905,46 @@
         });
     }
 
-    // パーティクル背景アニメーション
+    // ==========================================
+    // 花火＆パーティクル演出システム
+    // ==========================================
     const pCanvas = document.getElementById('particleCanvas');
     const pCtx = pCanvas.getContext('2d');
     pCanvas.width = window.innerWidth;
     pCanvas.height = window.innerHeight;
 
-    let particles = [];
-    for(let i=0; i<40; i++) {
-        particles.push({
+    let activeFireworks = [];
+
+    function triggerFireworks(type) {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const count = type === 'rainbow' ? 80 : 50;
+
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 6 + 2;
+            let color = '#f1c40f';
+            if (type === 'rainbow') {
+                const colors = ['#ff007f', '#00ffff', '#ffff00', '#7f00ff', '#ff4500'];
+                color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            activeFireworks.push({
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: Math.random() * 4 + 2,
+                color: color,
+                alpha: 1.0,
+                decay: Math.random() * 0.02 + 0.015
+            });
+        }
+    }
+
+    // 背景の通常パーティクルと花火を同時に動かすアニメーションループ
+    let ambientParticles = [];
+    for(let i=0; i<30; i++) {
+        ambientParticles.push({
             x: Math.random() * pCanvas.width,
             y: Math.random() * pCanvas.height,
             size: Math.random() * 2 + 1,
@@ -912,17 +954,49 @@
 
     function animateParticles() {
         pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-        pCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        particles.forEach(p => {
+
+        // 通常の浮遊パーティクル
+        pCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ambientParticles.forEach(p => {
             p.y -= p.speed;
             if (p.y < 0) p.y = pCanvas.height;
             pCtx.beginPath();
             pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             pCtx.fill();
         });
+
+        // 打ち上げ花火のパーティクル
+        if (activeFireworks.length > 0) {
+            activeFireworks.forEach((fp, index) => {
+                fp.x += fp.vx;
+                fp.y += fp.vy;
+                fp.vy += 0.05; // 重力
+                fp.alpha -= fp.decay;
+
+                if (fp.alpha <= 0) {
+                    activeFireworks.splice(index, 1);
+                    return;
+                }
+
+                pCtx.save();
+                pCtx.globalAlpha = fp.alpha;
+                pCtx.fillStyle = fp.color;
+                pCtx.beginPath();
+                pCtx.arc(fp.x, fp.y, fp.size, 0, Math.PI * 2);
+                pCtx.fill();
+                pCtx.restore();
+            });
+        }
+
         requestAnimationFrame(animateParticles);
     }
     animateParticles();
+
+    // 画面サイズ変更時のCanvas追従
+    window.addEventListener('resize', () => {
+        pCanvas.width = window.innerWidth;
+        pCanvas.height = window.innerHeight;
+    });
 </script>
 </body>
 </html>
