@@ -253,6 +253,7 @@
         
         #folderInput { display: none; }
         
+        /* パーティクル＆花火用Canvas（最前面） */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -282,7 +283,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.2</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.2 (完全版)</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -373,7 +374,7 @@
 
 <script>
     // ==========================================
-    // タイトルBGM制御 (エラーでも絶対に画面が進むように分離)
+    // スマホBGM & オーディオ制御（安全確実に再生）
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
@@ -385,13 +386,13 @@
     function handleTitleInteraction(e) {
         if (e) e.preventDefault();
         
-        // 音声再生トライ（ブロックされても画面遷移を邪魔しないようにする）
+        // タップされた瞬間にBGM再生を試みる（ブロックされても画面遷移は絶対に止まらない）
         titleBgm.play().catch(() => {});
         
-        // 確実にメニュー画面へジャンプ
         goToMenu();
     }
 
+    // タッチ＆クリック両方で100%確実に反応
     titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
@@ -491,4 +492,482 @@
 
     function showScreen(screenId) {
         const screens = document.querySelectorAll('.screen');
-        screens.forEach(s => s
+        screens.forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(screenId);
+        if (target) target.classList.add('active');
+    }
+
+    function goToTitle() { 
+        stopTitleBGM();
+        showScreen('titleScreen'); 
+    }
+    function goToMenu() { 
+        if(titleBgm.paused) {
+            titleBgm.play().catch(() => {});
+        }
+        showScreen('menuScreen'); 
+    }
+    function startPackSelect() { 
+        showScreen('packSelectScreen'); 
+    }
+
+    // ボタンのイベント割り当て
+    document.getElementById('menuPackBtn').addEventListener('touchstart', () => { playSE('select'); startPackSelect(); });
+    document.getElementById('menuPackBtn').addEventListener('click', () => { playSE('select'); startPackSelect(); });
+
+    document.getElementById('menuDexBtn').addEventListener('touchstart', () => { playSE('select'); openDex(); });
+    document.getElementById('menuDexBtn').addEventListener('click', () => { playSE('select'); openDex(); });
+
+    document.getElementById('menuTitleBtn').addEventListener('touchstart', () => { playSE('select'); goToTitle(); });
+    document.getElementById('menuTitleBtn').addEventListener('click', () => { playSE('select'); goToTitle(); });
+
+    document.getElementById('packBackBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('packBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
+
+    document.getElementById('resultMenuBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('resultMenuBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
+
+    document.getElementById('dexBackBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('dexBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
+
+    document.getElementById('selectFolderBtn').addEventListener('touchstart', () => { playSE('select'); triggerFolderSelect(); });
+    document.getElementById('selectFolderBtn').addEventListener('click', () => { playSE('select'); triggerFolderSelect(); });
+
+    document.getElementById('openPackBtn').addEventListener('touchstart', () => { playSE('select'); tryOpenPack(); });
+    document.getElementById('openPackBtn').addEventListener('click', () => { playSE('select'); tryOpenPack(); });
+
+    document.getElementById('nextCardBtn').addEventListener('touchstart', () => { nextCard(); });
+    document.getElementById('nextCardBtn').addEventListener('click', () => { nextCard(); });
+
+    document.getElementById('prevCardBtn').addEventListener('touchstart', () => { prevCard(); });
+    document.getElementById('prevCardBtn').addEventListener('click', () => { prevCard(); });
+
+    document.getElementById('packBlue').addEventListener('touchstart', () => { playSE('select'); selectPack(1); });
+    document.getElementById('packBlue').addEventListener('click', () => { playSE('select'); selectPack(1); });
+    document.getElementById('packRed').addEventListener('touchstart', () => { playSE('select'); selectPack(0); });
+    document.getElementById('packRed').addEventListener('click', () => { playSE('select'); selectPack(0); });
+    document.getElementById('packGreen').addEventListener('touchstart', () => { playSE('select'); selectPack(2); });
+    document.getElementById('packGreen').addEventListener('click', () => { playSE('select'); selectPack(2); });
+
+    function selectPack(type) {
+        currentPackType = type;
+        ['packRed', 'packBlue', 'packGreen'].forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if(idx === type) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+        const names = ["赤パック (炎)", "青パック (水)", "緑パック (草)"];
+        document.getElementById('packNameLabel').innerText = names[type];
+    }
+
+    function triggerFolderSelect() {
+        document.getElementById('folderInput').click();
+    }
+
+    document.getElementById('folderInput').addEventListener('change', function(e) {
+        let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+        const statusText = document.getElementById('folderStatusText');
+        if (files.length === 0) return;
+
+        if (files.length > 200) {
+            files.sort(() => Math.random() - 0.5);
+            files = files.slice(0, 200);
+            statusText.innerText = `📁 全 ${files.length}枚以上からランダムに200枚を選出中...`;
+        } else {
+            statusText.innerText = `📁 全 ${files.length}枚を読み込み中...`;
+        }
+        
+        loadedImageObjects = [];
+        let loadedCount = 0;
+        const totalToLoad = files.length;
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    loadedImageObjects.push(img);
+                    loadedCount++;
+                    statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
+                    
+                    const openBtn = document.getElementById('openPackBtn');
+                    openBtn.disabled = false;
+                    openBtn.style.opacity = '1';
+                };
+                img.onerror = function() { loadedCount++; };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    function getFallbackImage() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 540; canvas.height = 820;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(0, 0, 540, 820);
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 32px sans-serif';
+        ctx.fillText("Pocket Card", 170, 410);
+        const img = new Image();
+        img.src = canvas.toDataURL();
+        return img;
+    }
+
+    function tryOpenPack() {
+        if (loadedImageObjects.length === 0) {
+            loadedImageObjects.push(getFallbackImage());
+        }
+        generateBatchCards();
+
+        const packObj = document.getElementById('ripPackObj');
+        const packLabel = document.getElementById('packLabelText');
+        
+        if (hasHighRarityInBatch) {
+            packObj.classList.add('rainbow-pack');
+            packLabel.innerHTML = "✨ 激レア封入！<br>スワイプで開封！！";
+        } else {
+            packObj.classList.remove('rainbow-pack');
+            packLabel.innerHTML = "スワイプ or タップで<br>開封！！";
+        }
+
+        showScreen('openingScreen');
+    }
+
+    const packObj = document.getElementById('ripPackObj');
+    let packStartX = 0, packStartY = 0;
+    let isPackDragging = false;
+
+    packObj.addEventListener('touchstart', (e) => {
+        isPackDragging = true;
+        packStartX = e.touches[0].clientX;
+        packStartY = e.touches[0].clientY;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!isPackDragging) return;
+        let dx = e.touches[0].clientX - packStartX;
+        let dy = e.touches[0].clientY - packStartY;
+        packObj.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.1}deg)`;
+    });
+
+    window.addEventListener('touchend', (e) => {
+        if (!isPackDragging) return;
+        isPackDragging = false;
+        let dx = e.changedTouches[0].clientX - packStartX;
+        let dy = e.changedTouches[0].clientY - packStartY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 40 || distance < 10) {
+            executeRip();
+        } else {
+            packObj.style.transform = 'translate(0px, 0px) rotate(0deg)';
+        }
+    });
+
+    function executeRip() {
+        playSE('rip');
+        packObj.classList.add('ripping');
+
+        setTimeout(() => {
+            packObj.classList.remove('ripping');
+            packObj.style.transform = 'translate(0px, 0px) rotate(0deg)';
+            stopTitleBGM(); 
+            currentCardIndex = 0;
+            isViewingDexCard = false;
+            document.getElementById('resultActionBar').style.display = 'flex';
+            showScreen('cardResultScreen');
+            displayCurrentCard();
+        }, 400);
+    }
+
+    function generateBatchCards() {
+        openedBatchCards = [];
+        hasHighRarityInBatch = false;
+
+        for (let i = 0; i < 5; i++) {
+            const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
+            const rRand = Math.random();
+            let rarity = "★";
+            if (rRand > 0.90) {
+                rarity = "UR";
+                hasHighRarityInBatch = true;
+            } else if (rRand > 0.70) {
+                rarity = "★★★";
+                hasHighRarityInBatch = true;
+            } else if (rRand > 0.40) {
+                rarity = "★★";
+            }
+
+            const cardName = getRandomItem(adjParts) + " " + getRandomItem(nounParts);
+            const moveName = getRandomItem(attackParts);
+            const flavorText = getRandomItem(chaoticFlavors);
+
+            const card = {
+                image: randImg,
+                rarity: rarity,
+                name: cardName,
+                hp: Math.floor(Math.random() * 800 + 100),
+                type: currentPackType === 0 ? "炎" : (currentPackType === 1 ? "水" : "草"),
+                moveName: moveName,
+                moveDesc: flavorText,
+                damage: Math.floor(Math.random() * 300 + 50)
+            };
+            openedBatchCards.push(card);
+
+            if (!collectionDex.some(c => c.name === card.name)) {
+                collectionDex.push(card);
+            }
+        }
+        localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
+    }
+
+    function renderCardBackCanvas() {
+        const canvas = document.getElementById('backCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        grad.addColorStop(0, '#1a0033');
+        grad.addColorStop(0.3, '#330066');
+        grad.addColorStop(0.6, '#003366');
+        grad.addColorStop(1, '#001a1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+
+        const circleGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 150);
+        circleGrad.addColorStop(0, '#e74c3c');
+        circleGrad.addColorStop(0.5, '#9b59b6');
+        circleGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = circleGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 150, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 36px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 15;
+        ctx.fillText("★ POCKET ★", 0, -10);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.shadowBlur = 0;
+        ctx.fillText("MONSTER CARD", 0, 35);
+
+        ctx.restore();
+    }
+    renderCardBackCanvas();
+
+    function displayCurrentCard() {
+        const card = openedBatchCards[currentCardIndex];
+        document.getElementById('rarityHeader').innerText = card.rarity;
+        document.getElementById('cardBackFlavor').innerText = `${card.name}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n\n${card.moveDesc}`;
+
+        renderCardCanvas(card, 0, 0);
+
+        if (card.rarity === "UR" || card.rarity === "★★★") {
+            triggerScreenFlash();
+            if (card.rarity === "UR") {
+                playSE('ur_rare');
+                triggerSuperFireworks('ur');
+            } else {
+                playSE('firework');
+                triggerSuperFireworks('gold');
+            }
+        } else {
+            playSE('jakin');
+        }
+    }
+
+    function triggerScreenFlash() {
+        const overlay = document.getElementById('flashOverlay');
+        overlay.style.opacity = '1';
+        setTimeout(() => { overlay.style.opacity = '0'; }, 180);
+    }
+
+    function renderCardCanvas(card, rotX = 0, rotY = 0) {
+        const canvas = document.getElementById('resultCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (card.rarity === "UR") {
+            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradFrame.addColorStop(0, '#ff007f');
+            gradFrame.addColorStop(0.3, '#7f00ff');
+            gradFrame.addColorStop(0.7, '#00ffff');
+            gradFrame.addColorStop(1, '#ffff00');
+            ctx.fillStyle = gradFrame;
+        } else if (card.rarity === "★★★") {
+            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradFrame.addColorStop(0, '#f1c40f');
+            gradFrame.addColorStop(0.5, '#e74c3c');
+            gradFrame.addColorStop(1, '#9b59b6');
+            ctx.fillStyle = gradFrame;
+        } else {
+            ctx.fillStyle = '#f39c12';
+        }
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
+
+        ctx.fillStyle = '#fdfefe';
+        ctx.fillRect(22, 22, canvas.width - 44, canvas.height - 44);
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 28px sans-serif';
+        if(card.name.length > 10) ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(card.name, 40, 62);
+
+        ctx.fillStyle = '#c0392b';
+        ctx.font = 'bold 25px sans-serif';
+        ctx.fillText(`HP ${card.hp}`, canvas.width - 150, 62);
+
+        ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
+        ctx.beginPath();
+        ctx.arc(canvas.width - 60, 54, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(card.type, canvas.width - 60, 60);
+        ctx.textAlign = 'left';
+
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(40, 85, canvas.width - 80, 430);
+
+        if (card.image) {
+            ctx.drawImage(card.image, 42, 87, canvas.width - 84, 426);
+        }
+
+        if (card.rarity === "★★★" || card.rarity === "UR") {
+            ctx.save();
+            ctx.globalCompositeOperation = 'overlay';
+            let lightX = (canvas.width / 2) + (rotY * 25);
+            let lightY = (canvas.height / 2) + (rotX * 25);
+
+            const holoGrad = ctx.createRadialGradient(lightX, lightY, 10, lightX, lightY, 350);
+            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            holoGrad.addColorStop(0.2, 'rgba(255, 0, 128, 0.6)');
+            holoGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.6)');
+            holoGrad.addColorStop(0.7, 'rgba(255, 255, 0, 0.6)');
+            holoGrad.addColorStop(1, 'transparent');
+
+            ctx.fillStyle = holoGrad;
+            ctx.fillRect(40, 85, canvas.width - 80, 430);
+            ctx.restore();
+        }
+
+        ctx.fillStyle = '#fef9e7';
+        ctx.fillRect(40, 535, canvas.width - 80, 175);
+        ctx.strokeStyle = '#f5b041';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, 535, canvas.width - 80, 175);
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText(card.moveName, 55, 575);
+
+        ctx.fillStyle = '#c0392b';
+        ctx.font = 'bold 27px sans-serif';
+        ctx.fillText(card.damage, canvas.width - 125, 575);
+
+        ctx.fillStyle = '#566573';
+        ctx.font = '16px sans-serif';
+        let words = card.moveDesc;
+        let line = "";
+        let lineY = 610;
+        for(let i = 0; i < words.length; i++) {
+            line += words[i];
+            if(line.length >= 19 || i === words.length - 1) {
+                ctx.fillText(line, 55, lineY);
+                line = "";
+                lineY += 24;
+            }
+        }
+
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 50, 745);
+
+        const nextBtn = document.getElementById('nextCardBtn');
+        if (!isViewingDexCard && currentCardIndex === openedBatchCards.length - 1) {
+            nextBtn.innerText = "メニューへ";
+        } else if (isViewingDexCard) {
+            nextBtn.innerText = "図鑑へ戻る";
+        } else {
+            nextBtn.innerText = "次へ ▶";
+        }
+    }
+
+    function nextCard() {
+        playSE('select');
+        if (isViewingDexCard) {
+            openDex();
+            return;
+        }
+
+        if (currentCardIndex < openedBatchCards.length - 1) {
+            currentCardIndex++;
+            displayCurrentCard();
+            resetCardFlip();
+        } else {
+            goToMenu();
+        }
+    }
+
+    function prevCard() {
+        playSE('select');
+        if (isViewingDexCard) {
+            openDex();
+            return;
+        }
+
+        if (currentCardIndex > 0) {
+            currentCardIndex--;
+            displayCurrentCard();
+            resetCardFlip();
+        }
+    }
+
+    const cardObj = document.getElementById('card3dObject');
+    const container = document.getElementById('cardContainer');
+    let isFlipped = false;
+    
+    let currentRotX = 0, currentRotY = 0;
+    let startRotX = 0, startRotY = 0;
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let hasMoved = false;
+
+    container.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        hasMoved = false;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startRotX = currentRotX;
+        startRotY = currentRotY;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        let deltaX = e.touches[0].clientX - startX;
+        let deltaY = e.touches[0].clientY - startY;
+
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY)
