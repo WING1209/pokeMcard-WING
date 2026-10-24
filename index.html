@@ -196,15 +196,15 @@
         .card-back h3 {
             color: #f1c40f;
             margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
         }
         .card-back p {
-            font-size: 1rem;
-            line-height: 1.6;
+            font-size: 0.85rem;
+            line-height: 1.5;
             color: #ecf0f1;
             background: rgba(0, 0, 0, 0.4);
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.1);
         }
@@ -276,7 +276,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver5.0 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver3.0 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -303,7 +303,7 @@
             <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="playSE('select'); selectPack(2)">緑パック<br>草</div>
         </div>
 
-        <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (500枚以上対応)</div>
+        <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (200枚まで対応)</div>
 
         <div style="text-align:center; margin: 5px 0;">
             <span style="font-size: 2.5rem;">🎁</span>
@@ -345,8 +345,8 @@
                 </div>
                 <!-- 裏面 -->
                 <div class="card-face card-back">
-                    <h3>🌀 ポケモン図鑑・生態メモ</h3>
-                    <p id="cardBackFlavor">ここにポケモンの生態情報が表示されます。</p>
+                    <h3>🌀 カオス生態メモ</h3>
+                    <p id="cardBackFlavor">ここにカオスな文章が表示されます。</p>
                 </div>
             </div>
         </div>
@@ -369,29 +369,23 @@
 
 <script>
     // ==========================================
-    // BGM & 効果音設定 (音量を統一)
+    // こだわりのタイトルBGM（MP3直接再生版）
     // ==========================================
     const titleBgm = new Audio('title_bgm.mp3');
     titleBgm.loop = true;
-    titleBgm.volume = 0.15; // ★ タイトルBGMの音量を他の音量バランスに合わせて小さく調整しました
+    titleBgm.volume = 0.4;
 
-    function playTitleBGM() {
-        titleBgm.currentTime = 0;
-        titleBgm.play().catch(e => {});
+    function handleTitleClick() {
+        titleBgm.play().then(() => {
+            goToMenu();
+        }).catch(error => {
+            goToMenu();
+        });
     }
 
     function stopTitleBGM() {
         titleBgm.pause();
         titleBgm.currentTime = 0;
-    }
-
-    function handleTitleClick() {
-        initAudio();
-        playTitleBGM();
-        playSE('select');
-        stopTitleBGM(); 
-        startOtherBGM('menu'); 
-        goToMenu();
     }
 
     let audioCtx = null;
@@ -456,8 +450,30 @@
     }
 
     // ==========================================
-    // ゲーム本体のロジック
+    // ゲーム本体のロジック & カオス文章パーツ
     // ==========================================
+    const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙ティブな", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
+    const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
+    const attackParts = ["未知へのパルプンテ","かめはめ波", "ビックバンアタック","抱きしめろ","クソガキが！","バナナでも食べてろ！","韓国へ","チョコよこせ！","そして歩き出せ","一歩ずつ","奏でろ","ただただやかましい","ぶち上げろ","唐突なマントル", "全方位お昼寝", "無限エントロピー", "意味不明の突撃", "エモさの過剰摂取", "真夜中の冷蔵庫漁り"];
+    const chaoticFlavors = [
+        "なぜか突然、全方角に向かって正座をはじめる習性がある。",
+        "この写真を見ると、3日前の晩御飯の記憶が消え去る。",
+        "「たぶん気のせい」の一言で世界の理をねじ曲げる。",
+        "ポケットの中で勝手に発酵し、ほのかに甘い香りがする。",
+        "周囲の空気を完全に無視してマイペースに浮遊する。",
+        "意思を持つかのように、勝手にスマホの画面を連打する。",
+        "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。",
+        "お前のターン中に俺は踊りだす",
+        "俺のカードが光だし、お前は叫び出す！目が～目が～！",
+        "あきらめたら負けるが、あきらめなかったら負けないかもしれないかもしれない",
+        "私の戦闘力は53万です。",
+        "相手のカードを全て燃やす事ができる！"
+    ];
+
+    function getRandomItem(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
     let currentPackType = 1;
     let loadedImageObjects = []; 
     let openedBatchCards = []; 
@@ -479,7 +495,7 @@
 
     function goToTitle() { 
         stopOtherBGM();
-        playTitleBGM(); 
+        stopTitleBGM(); 
         showScreen('titleScreen'); 
     }
     function goToMenu() { 
@@ -515,10 +531,12 @@
         const statusText = document.getElementById('folderStatusText');
         if (files.length === 0) return;
 
-        if (files.length > 500) {
+        if (files.length > 200) {
             files.sort(() => Math.random() - 0.5);
-            files = files.slice(0, 500);
-            if(statusText) statusText.innerText = `📁 ランダムに500枚を選出中...`;
+            files = files.slice(0, 200);
+            if(statusText) statusText.innerText = `📁 全 ${files.length}枚以上からランダムに200枚を選出中...`;
+        } else {
+            if(statusText) statusText.innerText = `📁 全 ${files.length}枚を読み込み中...`;
         }
         
         loadedImageObjects = [];
@@ -584,12 +602,6 @@
 
     function generateBatchCards() {
         openedBatchCards = [];
-        const packNames = ["炎のモンスター", "水の精霊", "草の守護者"];
-        const moveNames = [
-            ["ひのたまタックル", "炎のエネルギーで相手を激しく突き飛ばす。"],
-            ["アクアバースト", "高水圧の水を勢いよく浴びせてダメージを与える。"],
-            ["ソーラービーム", "自然のエネルギーを集めて強力な光線を放つ。"]
-        ];
 
         for (let i = 0; i < 5; i++) {
             const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
@@ -598,17 +610,19 @@
             if (rRand > 0.85) rarity = "★★★";
             else if (rRand > 0.5) rarity = "★★☆";
 
-            const moveInfo = moveNames[currentPackType];
+            const cardName = getRandomItem(adjParts) + " " + getRandomItem(nounParts);
+            const moveName = getRandomItem(attackParts);
+            const flavorText = getRandomItem(chaoticFlavors);
 
             const card = {
                 image: randImg,
                 rarity: rarity,
-                name: packNames[currentPackType] + " LV." + Math.floor(Math.random() * 50 + 10),
-                hp: Math.floor(Math.random() * 200 + 60),
+                name: cardName,
+                hp: Math.floor(Math.random() * 800 + 100),
                 type: currentPackType === 0 ? "炎" : (currentPackType === 1 ? "水" : "草"),
-                moveName: moveInfo[0],
-                moveDesc: moveInfo[1],
-                damage: Math.floor(Math.random() * 90 + 20)
+                moveName: moveName,
+                moveDesc: flavorText,
+                damage: Math.floor(Math.random() * 300 + 50)
             };
             openedBatchCards.push(card);
 
@@ -620,228 +634,110 @@
     }
 
     // ==========================================
-    // ポケモンカード風デザインのCanvas描画
+    // ポケモンカード風フレーム ＆ ホログラム加工描画
     // ==========================================
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
         document.getElementById('rarityHeader').innerText = card.rarity;
-        document.getElementById('cardBackFlavor').innerText = `${card.name}\nタイプ: ${card.type}\nHP: ${card.hp}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n${card.moveDesc}`;
+        document.getElementById('cardBackFlavor').innerText = `${card.name}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n\n${card.moveDesc}`;
 
+        renderCardCanvas(card, 0, 0);
+    }
+
+    function renderCardCanvas(card, rotX = 0, rotY = 0) {
         const canvas = document.getElementById('resultCanvas');
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. ポケモンカード風の金色の外枠フレーム
-        ctx.fillStyle = '#f39c12';
+        // 1. フレーム（★★★のときは特別にホロゴールド枠）
+        if (card.rarity === "★★★") {
+            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradFrame.addColorStop(0, '#f1c40f');
+            gradFrame.addColorStop(0.5, '#e74c3c');
+            gradFrame.addColorStop(1, '#9b59b6');
+            ctx.fillStyle = gradFrame;
+        } else {
+            ctx.fillStyle = '#f39c12';
+        }
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
 
-        // 2. カード内部の背景
+        // 2. カード内部背景
         ctx.fillStyle = '#fdfefe';
         ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
 
         // 3. 上部ヘッダー（名前 ＆ HP）
         ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 28px sans-serif';
-        ctx.fillText(card.name, 35, 60);
+        ctx.font = 'bold 24px sans-serif';
+        if(card.name.length > 10) ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(card.name, 35, 55);
 
         ctx.fillStyle = '#c0392b';
         ctx.font = 'bold 22px sans-serif';
-        ctx.fillText(`HP ${card.hp}`, canvas.width - 130, 60);
+        ctx.fillText(`HP ${card.hp}`, canvas.width - 130, 55);
 
         // タイプアイコン
         ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
         ctx.beginPath();
-        ctx.arc(canvas.width - 55, 52, 16, 0, Math.PI * 2);
+        ctx.arc(canvas.width - 55, 48, 15, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = 'bold 13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(card.type, canvas.width - 55, 57);
+        ctx.fillText(card.type, canvas.width - 55, 53);
         ctx.textAlign = 'left';
 
         // 4. イラストウィンドウ
         ctx.strokeStyle = '#d35400';
         ctx.lineWidth = 4;
-        ctx.strokeRect(35, 80, canvas.width - 70, 360);
+        ctx.strokeRect(35, 75, canvas.width - 70, 350);
 
         if (card.image) {
-            ctx.drawImage(card.image, 37, 82, canvas.width - 74, 356);
+            ctx.drawImage(card.image, 37, 77, canvas.width - 74, 346);
         }
 
-        // 5. ワザエリアの枠
+        // ★ レア（★★★）のときのホログラム・シークレット光沢エフェクト（傾き連動）
+        if (card.rarity === "★★★") {
+            ctx.save();
+            ctx.globalCompositeOperation = 'overlay';
+            let lightX = (canvas.width / 2) + (rotY * 15);
+            let lightY = (canvas.height / 2) + (rotX * 15);
+
+            const holoGrad = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, 250);
+            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            holoGrad.addColorStop(0.2, 'rgba(255, 0, 128, 0.4)');
+            holoGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.4)');
+            holoGrad.addColorStop(0.6, 'rgba(255, 255, 0, 0.4)');
+            holoGrad.addColorStop(1, 'transparent');
+
+            ctx.fillStyle = holoGrad;
+            ctx.fillRect(35, 75, canvas.width - 70, 350);
+            ctx.restore();
+        }
+
+        // 5. ワザエリア
         ctx.fillStyle = '#fef9e7';
-        ctx.fillRect(35, 455, canvas.width - 70, 160);
+        ctx.fillRect(35, 440, canvas.width - 70, 175);
         ctx.strokeStyle = '#f5b041';
         ctx.lineWidth = 2;
-        ctx.strokeRect(35, 455, canvas.width - 70, 160);
+        ctx.strokeRect(35, 440, canvas.width - 70, 175);
 
-        // ワザ情報描画
+        // ワザ情報
         ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText(card.moveName, 55, 495);
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(card.moveName, 50, 475);
 
         ctx.fillStyle = '#c0392b';
-        ctx.font = 'bold 26px sans-serif';
-        ctx.fillText(card.damage, canvas.width - 110, 495);
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText(card.damage, canvas.width - 110, 475);
 
         ctx.fillStyle = '#566573';
-        ctx.font = '16px sans-serif';
-        ctx.fillText(card.moveDesc, 55, 535, canvas.width - 110);
-
-        // 6. 下部情報
-        ctx.fillStyle = '#7f8c8d';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`レア度: ${card.rarity}  |  にげる: 🌟  |  弱点: ×2`, 45, 645);
-
-        const nextBtn = document.getElementById('nextBtn');
-        if (currentCardIndex === openedBatchCards.length - 1) {
-            nextBtn.innerText = "メニューへ";
-        } else {
-            nextBtn.innerText = "次へ ▶";
-        }
-    }
-
-    function nextCard() {
-        playSE('select');
-        if (currentCardIndex < openedBatchCards.length - 1) {
-            currentCardIndex++;
-            displayCurrentCard();
-            resetCardFlip();
-        } else {
-            goToMenu();
-        }
-    }
-
-    function prevCard() {
-        playSE('select');
-        if (currentCardIndex > 0) {
-            currentCardIndex--;
-            displayCurrentCard();
-            resetCardFlip();
-        }
-    }
-
-    // ==========================================
-    // 3Dカード操作
-    // ==========================================
-    const cardObj = document.getElementById('card3dObject');
-    const container = document.getElementById('cardContainer');
-    let isFlipped = false;
-    
-    let currentRotX = 0, currentRotY = 0;
-    let startRotX = 0, startRotY = 0;
-    let startX = 0, startY = 0;
-    let isDragging = false;
-    let hasMoved = false;
-
-    container.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        hasMoved = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        startRotX = currentRotX;
-        startRotY = currentRotY;
-    });
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        let deltaX = e.clientX - startX;
-        let deltaY = e.clientY - startY;
-
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-            hasMoved = true;
-        }
-
-        currentRotY = startRotY + (deltaX * 0.4);
-        currentRotX = startRotX - (deltaY * 0.4);
-        updateCardTransform();
-    });
-
-    window.addEventListener('pointerup', () => {
-        if (!isDragging) return;
-        isDragging = false;
-
-        if (!hasMoved) {
-            isFlipped = !isFlipped;
-            playSE('appear');
-            updateCardTransform();
-        }
-    });
-
-    function resetCardFlip() {
-        isFlipped = false;
-        currentRotX = 0;
-        currentRotY = 0;
-        startRotX = 0;
-        startRotY = 0;
-        updateCardTransform();
-    }
-
-    function updateCardTransform() {
-        let flipDeg = isFlipped ? 180 : 0;
-        cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
-    }
-
-    function openDex() {
-        stopOtherBGM();
-        startOtherBGM('dex');
-        showScreen('dexScreen');
-        const grid = document.getElementById('dexGrid');
-        grid.innerHTML = '';
-
-        if (collectionDex.length === 0) {
-            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
-            return;
-        }
-
-        collectionDex.forEach(card => {
-            const item = document.createElement('div');
-            item.className = 'dex-item';
-            
-            const img = document.createElement('img');
-            const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 150; tmpCanvas.height = 200;
-            const tCtx = tmpCanvas.getContext('2d');
-            tCtx.drawImage(card.image, 0, 0, 150, 200);
-            img.src = tmpCanvas.toDataURL();
-
-            item.appendChild(img);
-            grid.appendChild(item);
-        });
-    }
-
-    // パーティクル背景アニメーション
-    const pCanvas = document.getElementById('particleCanvas');
-    const pCtx = pCanvas.getContext('2d');
-    pCanvas.width = window.innerWidth;
-    pCanvas.height = window.innerHeight;
-
-    let particles = [];
-    for(let i=0; i<40; i++) {
-        particles.push({
-            x: Math.random() * pCanvas.width,
-            y: Math.random() * pCanvas.height,
-            size: Math.random() * 2 + 1,
-            speed: Math.random() * 0.5 + 0.2
-        });
-    }
-
-    function animateParticles() {
-        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-        pCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        particles.forEach(p => {
-            p.y -= p.speed;
-            if (p.y < 0) p.y = pCanvas.height;
-            pCtx.beginPath();
-            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            pCtx.fill();
-        });
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-</script>
-</body>
-</html>
+        ctx.font = '15px sans-serif';
+        let words = card.moveDesc;
+        let line = "";
+        let lineY = 510;
+        for(let i = 0; i < words.length; i++) {
+            line += words[i];
+            if(line.
