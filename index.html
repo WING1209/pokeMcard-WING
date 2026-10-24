@@ -76,6 +76,7 @@
             max-width: 280px;
             box-shadow: 0 4px 15px rgba(231,76,60,0.6);
             z-index: 5;
+            cursor: pointer;
         }
 
         .pack-container {
@@ -95,6 +96,7 @@
             font-size: 0.85rem;
             border: 3px solid #fff;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            cursor: pointer;
         }
         .pack-item.selected {
             transform: scale(1.08);
@@ -134,6 +136,7 @@
             text-align: center;
             box-shadow: 0 0 25px #f1c40f;
             will-change: transform;
+            cursor: pointer;
         }
         
         .rip-pack.rainbow-pack {
@@ -155,6 +158,7 @@
             transition: all 0.4s ease-out !important;
         }
 
+        /* 3Dカード・ズーム対応コンテナ */
         .card-view-container {
             perspective: 1400px;
             width: 270px;
@@ -162,6 +166,7 @@
             margin: 5px auto;
             position: relative;
             touch-action: none;
+            transition: transform 0.2s ease-out;
         }
         .card-3d-object {
             width: 100%;
@@ -210,6 +215,7 @@
             box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
         }
 
+        /* 図鑑グリッド */
         .dex-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -350,11 +356,11 @@
         <div></div>
     </div>
 
-    <!-- 5. 獲得カード閲覧画面 -->
+    <!-- 5. 獲得カード閲覧・360度ズーム鑑賞画面 -->
     <div id="cardResultScreen" class="screen">
         <div>
             <div id="rarityHeader" style="font-size:1.3rem; font-weight:bold; color:#f1c40f; text-align:center; text-shadow: 0 0 10px #f1c40f;">★</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 「次へ」で進む / 👆 タップで裏返る / スワイプ回転</p>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">👆 360度スワイプ回転 / タップ裏返る / ピンチでズーム</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -378,7 +384,7 @@
 
     <!-- 6. 獲得カード一覧 (図鑑) 画面 -->
     <div id="dexScreen" class="screen">
-        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで鑑賞)</h2>
+        <h2 style="margin:5px 0;">獲得カード図鑑 (タップで360度鑑賞)</h2>
         <div class="dex-grid" id="dexGrid"></div>
         <div style="width:90%; max-width:280px; text-align:center; margin-top:5px;">
             <button class="btn-sub" id="dexBackBtn" style="width:100%;">もどる</button>
@@ -400,7 +406,7 @@
         goToMenu();
     }
 
-    titleScreenEl.addEventListener('click', handleTitleInteraction);
+    titleScreenEl.onclick = handleTitleInteraction;
 
     function stopTitleBGM() {
         try {
@@ -532,7 +538,6 @@
         showScreen('packSelectScreen'); 
     }
 
-    // ボタンの多重発火を防ぐ安全なイベント登録（クリックのみで確実かつ1回だけ動作）
     document.getElementById('menuPackBtn').onclick = () => { playSE('select'); startPackSelect(); };
     document.getElementById('menuDexBtn').onclick = () => { playSE('select'); openDex(); };
     document.getElementById('menuTitleBtn').onclick = () => { playSE('select'); goToTitle(); };
@@ -542,7 +547,6 @@
     document.getElementById('selectFolderBtn').onclick = () => { playSE('select'); triggerFolderSelect(); };
     document.getElementById('openPackBtn').onclick = () => { playSE('select'); tryOpenPack(); };
 
-    // 次へ・前へボタン（二重発火を完全に排除）
     document.getElementById('nextCardBtn').onclick = () => { nextCard(); };
     document.getElementById('prevCardBtn').onclick = () => { prevCard(); };
 
@@ -928,7 +932,7 @@
         if (currentCardIndex < openedBatchCards.length - 1) {
             currentCardIndex++;
             displayCurrentCard();
-            resetCardFlip();
+            resetCardTransformState();
         } else {
             goToMenu();
         }
@@ -944,64 +948,106 @@
         if (currentCardIndex > 0) {
             currentCardIndex--;
             displayCurrentCard();
-            resetCardFlip();
+            resetCardTransformState();
         }
     }
 
+    // ==========================================
+    // 360度回転 ＆ ピンチズゾン・ダブルタップ拡大システム
+    // ==========================================
     const cardObj = document.getElementById('card3dObject');
     const container = document.getElementById('cardContainer');
-    let isFlipped = false;
     
+    let isFlipped = false;
     let currentRotX = 0, currentRotY = 0;
     let startRotX = 0, startRotY = 0;
     let startX = 0, startY = 0;
     let isDragging = false;
     let hasMoved = false;
 
+    let currentScale = 1.0;
+    let initialPinchDistance = 0;
+
     container.addEventListener('touchstart', (e) => {
-        isDragging = true;
-        hasMoved = false;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        startRotX = currentRotX;
-        startRotY = currentRotY;
-    });
-
-    window.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
-        let deltaX = e.touches[0].clientX - startX;
-        let deltaY = e.touches[0].clientY - startY;
-
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-            hasMoved = true;
-        }
-
-        currentRotY = startRotY + (deltaX * 0.4);
-        currentRotX = startRotX - (deltaY * 0.4);
-        updateCardTransform();
-
-        if (openedBatchCards[currentCardIndex]) {
-            renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
+        if (e.touches.length === 1) {
+            isDragging = true;
+            hasMoved = false;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startRotX = currentRotX;
+            startRotY = currentRotY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            initialPinchDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
         }
     });
 
-    window.addEventListener('touchend', () => {
-        if (!isDragging) return;
-        isDragging = false;
+    container.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) {
+            let deltaX = e.touches[0].clientX - startX;
+            let deltaY = e.touches[0].clientY - startY;
 
-        if (!hasMoved) {
-            isFlipped = !isFlipped;
-            playSE('appear');
+            if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+                hasMoved = true;
+            }
+
+            // 360度自在にグリグリ回転
+            currentRotY = startRotY + (deltaX * 0.6);
+            currentRotX = startRotX - (deltaY * 0.6);
             updateCardTransform();
+
+            if (openedBatchCards[currentCardIndex]) {
+                renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
+            }
+        } else if (e.touches.length === 2) {
+            let currentPinchDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            if (initialPinchDistance > 0) {
+                let scaleChange = currentPinchDistance / initialPinchDistance;
+                currentScale = Math.min(Math.max(0.8, currentScale * scaleChange), 2.5);
+                container.style.transform = `scale(${currentScale})`;
+                initialPinchDistance = currentPinchDistance;
+            }
         }
     });
 
-    function resetCardFlip() {
+    container.addEventListener('touchend', (e) => {
+        if (isDragging) {
+            isDragging = false;
+            if (!hasMoved) {
+                // タップで裏返る
+                isFlipped = !isFlipped;
+                playSE('appear');
+                updateCardTransform();
+            }
+        }
+    });
+
+    // ダブルタップでズーム切り替え
+    let lastTapTime = 0;
+    container.addEventListener('click', () => {
+        let now = new Date().getTime();
+        if (now - lastTapTime < 300) {
+            currentScale = currentScale === 1.0 ? 1.6 : 1.0;
+            container.style.transform = `scale(${currentScale})`;
+            playSE('select');
+        }
+        lastTapTime = now;
+    });
+
+    function resetCardTransformState() {
         isFlipped = false;
         currentRotX = 0;
         currentRotY = 0;
         startRotX = 0;
         startRotY = 0;
+        currentScale = 1.0;
+        container.style.transform = `scale(1.0)`;
         updateCardTransform();
         if (openedBatchCards[currentCardIndex]) {
             renderCardCanvas(openedBatchCards[currentCardIndex], 0, 0);
@@ -1014,10 +1060,10 @@
     }
 
     // ==========================================
-    // 図鑑一覧 & 個別鑑賞の完全修復版
+    // 獲得カード図鑑 (一覧表示＆360度個別鑑賞)
     // ==========================================
     function openDex() {
-        isViewingDexCard = false;
+        isViewingDexCard = true;
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         grid.innerHTML = '';
@@ -1036,6 +1082,7 @@
             renderCardCanvas(card, 0, 0, thumbCanvas);
             item.appendChild(thumbCanvas);
             
+            // 一覧からタップされたカードを1枚表示し、360度鑑賞モードへ
             item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
@@ -1044,7 +1091,7 @@
                 document.getElementById('resultActionBar').style.display = 'flex';
                 showScreen('cardResultScreen');
                 displayCurrentCard();
-                resetCardFlip();
+                resetCardTransformState();
             };
 
             grid.appendChild(item);
