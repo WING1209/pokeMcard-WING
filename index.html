@@ -214,14 +214,14 @@
             box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
         }
 
-        /* 図鑑グリッドの安定化 */
+        /* 図鑑グリッド */
         .dex-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             width: 100%;
             max-width: 360px;
-            max-height: 60vh;
+            height: 62vh;
             overflow-y: auto;
             padding: 10px;
             background: rgba(255,255,255,0.05);
@@ -229,18 +229,22 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
         .dex-item {
-            background: #111;
+            background: #222;
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid #f39c12;
-            width: 100%;
+            aspect-ratio: 270/410;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             cursor: pointer;
         }
-        .dex-item img {
+        .dex-item canvas {
             width: 100%;
-            height: auto;
+            height: 100%;
             display: block;
+            object-fit: cover;
         }
 
         .action-bar {
@@ -297,7 +301,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.7</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.1</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -506,6 +510,7 @@
     let isViewingDexCard = false;
     let hasHighRarityInBatch = false;
 
+    // 安全なフォールバック画像生成
     function getFallbackImage() {
         const canvas = document.createElement('canvas');
         canvas.width = 540; canvas.height = 820;
@@ -544,6 +549,7 @@
         }
     }
 
+    // 起動時のデータ読み込み
     function loadDexFromStorage() {
         try {
             const savedDex = localStorage.getItem('pocket_mon_dex');
@@ -556,6 +562,7 @@
             }
         } catch(e) {}
         
+        // 初期テストカード
         collectionDex = [{
             rarity: "UR",
             name: "初期の 伝説ゴリラ",
@@ -907,6 +914,7 @@
         ctx.lineWidth = 4;
         ctx.strokeRect(40, 85, canvas.width - 80, 430);
 
+        // 画像の即時描画（非同期ブロック防止）
         const img = new Image();
         img.src = card.imageSrc || fallbackImg.src;
         try {
@@ -1116,7 +1124,7 @@
     }
 
     // ==========================================
-    // 獲得カード図鑑 (確実な画像生成とサムネイル表示)
+    // 獲得カード図鑑 (完全直結・確実な一括描画)
     // ==========================================
     function openDex() {
         loadDexFromStorage();
@@ -1125,7 +1133,7 @@
         grid.innerHTML = '';
 
         if (!collectionDex || collectionDex.length === 0) {
-            grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
+            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
             return;
         }
 
@@ -1134,15 +1142,11 @@
             item.className = 'dex-item';
             
             const thumbCanvas = document.createElement('canvas');
-            thumbCanvas.width = 270; 
-            thumbCanvas.height = 410;
+            thumbCanvas.width = 270; thumbCanvas.height = 410;
             
+            // 各カードデータをダイレクトにキャンバスへ即時レンダリング
             renderCardCanvas(card, 0, 0, thumbCanvas);
-            
-            // キャンバスをPNG画像に変換してimgタグで表示することでスマホでの描画抜けを完全に防止
-            const imgEl = document.createElement('img');
-            imgEl.src = thumbCanvas.toDataURL('image/png');
-            item.appendChild(imgEl);
+            item.appendChild(thumbCanvas);
             
             // タップで1枚表示＆360度鑑賞モードへ
             item.onclick = () => {
