@@ -143,7 +143,7 @@
             transition: all 0.5s ease-out !important;
         }
 
-        /* 3Dカードフリップ＆回転コンテナ */
+        /* 3Dカードフリップ＆回転コンテナ（なめらかな操作対応のためtransition削除） */
         .card-view-container {
             perspective: 1200px;
             width: 280px;
@@ -151,14 +151,15 @@
             margin: 5px auto;
             position: relative;
             cursor: grab;
+            touch-action: none;
         }
         .card-3d-object {
             width: 100%;
             height: 100%;
             position: absolute;
             transform-style: preserve-3d;
-            transition: transform 0.05s ease-out;
             border-radius: 15px;
+            will-change: transform;
         }
         .card-face {
             position: absolute;
@@ -255,16 +256,27 @@
         .btn-main { background: #e67e22; color: #fff; }
         
         #folderInput { display: none; }
+
+        /* 花火エフェクト用Canvas */
+        #particleCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
+
+    <canvas id="particleCanvas"></canvas>
 
     <!-- 1. タイトル画面 -->
     <div id="titleScreen" class="screen active" onclick="goToMenu()">
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.0 (500枚ランダム＆なめらか3D)</p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -291,17 +303,18 @@
             <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="selectPack(2)">緑パック<br>草</div>
         </div>
 
-        <div class="folder-status" id="folderStatusText">📁 スマホの写真を選択してください</div>
+        <div class="folder-status" id="folderStatusText">📁 画像フォルダを選択してください (500枚以上対応)</div>
 
         <div style="text-align:center; margin: 5px 0;">
             <span style="font-size: 2.5rem;">🎁</span>
             <div id="packNameLabel" style="font-weight:bold; font-size:0.9rem;">青パック</div>
         </div>
 
-        <input type="file" id="folderInput" multiple accept="image/*">
+        <!-- フォルダ一括選択（webkitdirectory） -->
+        <input type="file" id="folderInput" webkitdirectory directory multiple accept="image/*">
         
         <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-            <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="triggerFolderSelect()">📁 写真を選ぶ</button>
+            <button class="menu-btn" style="background:#27ae60; margin:4px 0;" onclick="triggerFolderSelect()">📁 フォルダを選ぶ</button>
             <button class="menu-btn" style="background:#e67e22; margin:4px 0;" id="openPackBtn" onclick="tryOpenPack()" disabled style="opacity:0.5;">✨ パックを開封する！(5枚)</button>
             <button class="btn-sub" style="width:80%; max-width:260px; margin-top:4px;" onclick="goToMenu()">もどる</button>
         </div>
@@ -318,11 +331,11 @@
         <div></div>
     </div>
 
-    <!-- 5. 獲得カード閲覧画面 -->
+    <!-- 5. 獲得カード閲覧画面 (3D鑑賞 & 5枚連続開封) -->
     <div id="cardResultScreen" class="screen">
         <div>
             <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★☆☆</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">↔️ 左右スワイプ: 切替 / 👆 ドラッグ: 3D回転</p>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">↔️ 左右スワイプ: 次のカード / 👆 ドラッグ: 3D回転</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -341,7 +354,7 @@
 
         <div class="action-bar">
             <button class="btn-sub" onclick="exitCardView()">もどる</button>
-            <button class="btn-main" onclick="downloadCurrentCard()">ダウンロード</button>
+            <button class="btn-main" id="nextOrFinishBtn" onclick="handleNextCardAction()">次のカード</button>
         </div>
     </div>
 
@@ -369,19 +382,13 @@
 
     let hasHighestRarityInBatch = false;
 
-    // 画面切り替えの絶対安全ロジック
+    // 画面切り替え
     function showScreen(screenId) {
         try {
             const screens = document.querySelectorAll('.screen');
-            screens.forEach(function(s) {
-                s.classList.remove('active');
-            });
+            screens.forEach(s => s.classList.remove('active'));
             const target = document.getElementById(screenId);
-            if (target) {
-                target.classList.add('active');
-            } else {
-                console.error("Screen not found: " + screenId);
-            }
+            if (target) target.classList.add('active');
         } catch(err) {
             console.error("showScreen error:", err);
         }
@@ -394,7 +401,7 @@
     function selectPack(type) {
         currentPackType = type;
         const items = document.querySelectorAll('.pack-item');
-        items.forEach(function(el, idx) {
+        items.forEach((el, idx) => {
             if(idx === type) el.classList.add('selected');
             else el.classList.remove('selected');
         });
@@ -408,31 +415,38 @@
         if(input) input.click();
     }
 
+    // ④ フォルダ内から最大500枚を自動ランダム選出して読み込み
     document.getElementById('folderInput').addEventListener('change', function(e) {
-        const files = Array.from(e.target.files).filter(function(file) {
-            return file.type.startsWith('image/');
-        });
+        let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
         if (files.length === 0) {
-            alert('画像ファイルを選択してください。');
+            alert('有効な画像ファイルが見つかりませんでした。');
             return;
         }
 
         const statusText = document.getElementById('folderStatusText');
-        if(statusText) statusText.innerText = `📁 読み込み中... (0 / ${files.length}枚)`;
+        if(statusText) statusText.innerText = `📁 読み込み中... (全 ${files.length} 枚検出)`;
+
+        // 500枚以上ある場合はシャッフルしてランダムに500枚を選出
+        if (files.length > 500) {
+            files.sort(() => Math.random() - 0.5);
+            files = files.slice(0, 500);
+            if(statusText) statusText.innerText = `📁 5000+枚中ランダムに500枚を選出中...`;
+        }
         
         loadedImageObjects = [];
         let loadedCount = 0;
+        const totalToLoad = files.length;
 
-        files.forEach(function(file) {
+        files.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
                     loadedImageObjects.push(img);
                     loadedCount++;
-                    if(statusText) statusText.innerText = `📁 読み込み完了: ${loadedCount}枚の画像を使用`;
+                    if(statusText) statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
                     
-                    if (loadedCount === files.length) {
+                    if (loadedCount === totalToLoad) {
                         const openBtn = document.getElementById('openPackBtn');
                         if(openBtn) {
                             openBtn.disabled = false;
@@ -440,7 +454,13 @@
                         }
                     }
                 };
-                img.onerror = function() { loadedCount++; };
+                img.onerror = function() { 
+                    loadedCount++; 
+                    if (loadedCount === totalToLoad && loadedImageObjects.length > 0) {
+                        const openBtn = document.getElementById('openPackBtn');
+                        if(openBtn) { openBtn.disabled = false; openBtn.style.opacity = '1'; }
+                    }
+                };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
@@ -449,7 +469,7 @@
 
     function tryOpenPack() {
         if (loadedImageObjects.length === 0) {
-            alert('先に写真を選択してください！');
+            alert('先に画像フォルダを選択してください！');
             return;
         }
         generatePackCards(); 
@@ -473,8 +493,8 @@
         showScreen('openingScreen');
     }
 
-    // 摩訶不思議・カオス文章自動生成パーツ
-    const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙的", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
+    // カオス文章パーツ
+    const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙ティブな", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
     const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
     const attackParts = ["未知へのパルプンテ","かめはめ波", "ビックバンアタック","抱きしめろ","クソガキが！","バナナでも食べてろ！","韓国へ","チョコよこせ！","そして歩き出せ","一歩ずつ","奏でろ","ただただやかましい","ぶち上げろ","唐突なマントル", "全方位お昼寝", "無限エントロピー", "意味不明の突撃", "エモさの過剰摂取", "真夜中の冷蔵庫漁り"];
     const chaoticFlavors = [
@@ -487,27 +507,9 @@
         "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。",
         "お前のターン中に俺は踊りだす",
         "俺のカードが光だし、お前は叫び出す！目が～目が～！",
-        "気になるあいつにDMをする事となるが砕け散る",
         "あきらめたら負けるが、あきらめなかったら負けないかもしれないかもしれない",
-        "深呼吸をして整えれば良い",
-        "テストの時に100点をとり叫ぼう",
-        "キラキラしてるぜ！",
-        "お前はすでにPOKEもんマスターだぜ！",
-        "さとし～！！",
-        "いその～！野球しようぜ！",
-        "俺のターンで相手に足をかけてえらい事となる！！",
-        "ジムリーダーとなり月給400万で生活をする事となる",
-        "そういうときもありょ、頑張ろうぜ",
-        "もぅ、なに？何がしたいんだオマエは！",
-        "ク、クリソソの事かぁ～！！！！",
         "私の戦闘力は53万です。",
-        "相手のカードを全て燃やす事ができる！",
-        "相手のクレジットカードからいくらか引き出す事ができる",
-        "気が向いたらオマエにあげるよ",
-        "何をだよ！",
-        "もうすぐ晴れるよ！",
-        "もうすぐ腫れるよ！",
-        "もうすぐ貼れるよ！"
+        "相手のカードを全て燃やす事ができる！"
     ];
 
     function generateChaosCardData() {
@@ -519,10 +521,10 @@
 
         let rRand = Math.random();
         let rarity = "★☆☆";
-        if(rRand > 0.92) { rarity = "UR"; hasHighestRarityInBatch = true; }
-        else if(rRand > 0.82) { rarity = "SSR"; hasHighestRarityInBatch = true; }
-        else if(rRand > 0.68) rarity = "SR";
-        else if(rRand > 0.48) rarity = "★★★";
+        if(rRand > 0.94) { rarity = "UR"; hasHighestRarityInBatch = true; }
+        else if(rRand > 0.85) { rarity = "SSR"; hasHighestRarityInBatch = true; }
+        else if(rRand > 0.70) rarity = "SR";
+        else if(rRand > 0.50) rarity = "★★★";
         else if(rRand > 0.25) rarity = "★★☆";
 
         return {
@@ -562,7 +564,7 @@
 
         const grad = ctx.createLinearGradient(0, 0, 600, 840);
         if(card.rarity === "UR" || card.rarity === "SSR") {
-            grad.addColorStop(0, '#f1c40f'); grad.addColorStop(0.5, '#e74c3c'); grad.addColorStop(1, '#9b59b6');
+            grad.addColorStop(0, '#ff00ff'); grad.addColorStop(0.5, '#00ffff'); grad.addColorStop(1, '#ffff00');
         } else if(card.rarity === "SR" || card.rarity === "★★★") {
             grad.addColorStop(0, '#9b59b6'); grad.addColorStop(1, '#2980b9');
         } else {
@@ -614,6 +616,7 @@
         return c.toDataURL('image/png');
     }
 
+    // ② パックを破る演出から、1枚目を開く
     function executeRip() {
         const ripObj = document.getElementById('ripPackObj');
         if(ripObj) ripObj.classList.add('ripping');
@@ -652,10 +655,36 @@
         }
 
         rotX = 0; rotY = 0;
-        const cardObj = document.getElementById('card3dObject');
         if(cardObj) cardObj.style.transform = `rotateX(0deg) rotateY(0deg)`;
+
+        // ボタンのテキスト切り替え（5枚目のときは「完了」などにする）
+        const nextBtn = document.getElementById('nextOrFinishBtn');
+        if(nextBtn) {
+            if(openedBatchCards.length === 1) {
+                nextBtn.style.display = 'none'; // 図鑑から開いた場合は「次のカード」ボタン非表示
+            } else {
+                nextBtn.style.display = 'block';
+                nextBtn.innerText = (currentCardIndex === 4) ? "開封完了！" : "次のカード";
+            }
+        }
+
+        // ② 最高レア度（UR / SSR）なら花火パーティクル発動
+        if(card.rarity === "UR" || card.rarity === "SSR") {
+            triggerFireworks();
+        }
     }
 
+    // 次のカードへ進むボタン
+    function handleNextCardAction() {
+        if(currentCardIndex < openedBatchCards.length - 1) {
+            currentCardIndex++;
+            renderCurrentCardView();
+        } else {
+            goToMenu();
+        }
+    }
+
+    // ③ 獲得カード図鑑からタップした選択カードも360度見られる仕様
     function openDex() {
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
@@ -672,7 +701,7 @@
             item.className = 'dex-item';
             item.innerHTML = `<img src="${card.dataUrl}" alt="card">`;
             item.onclick = function() {
-                openedBatchCards = [card];
+                openedBatchCards = [card]; // 1枚だけのリストにしてビューアへ
                 currentCardIndex = 0;
                 showCardResultScreen();
             };
@@ -684,30 +713,30 @@
         goToMenu(); 
     }
 
-    function downloadCurrentCard() {
-        const card = openedBatchCards[currentCardIndex];
-        if(!card) return;
-        const link = document.createElement('a');
-        link.download = `pocket_mon_card_${Date.now()}.png`;
-        link.href = card.dataUrl;
-        link.click();
-    }
-
-    // --- 3D回転 ＆ 左右スワイプ操作の実装 ---
+    // ==========================================
+    // ① ①・③ なめらかな3D回転 ＆ 慣性 (Momentum) ＆ スワイプ操作
+    // ==========================================
     const cardContainer = document.getElementById('cardContainer');
     const cardObj = document.getElementById('card3dObject');
 
     let isDragging = false;
     let startX = 0, startY = 0;
     let rotX = 0, rotY = 0;
+    let velocityX = 0, velocityY = 0;
+    let animationFrameId = null;
     let touchStartX = 0;
 
     if(cardContainer && cardObj) {
+        function updateTransform() {
+            cardObj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        }
+
         cardContainer.addEventListener('pointerdown', function(e) {
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
             touchStartX = e.clientX;
+            cancelAnimationFrame(animationFrameId);
         });
 
         window.addEventListener('pointermove', function(e) {
@@ -715,13 +744,16 @@
             let dx = e.clientX - startX;
             let dy = e.clientY - startY;
 
-            rotY += dx * 0.5;
-            rotX -= dy * 0.5;
+            velocityX = dx * 0.6;
+            velocityY = -dy * 0.6;
+
+            rotY += velocityX;
+            rotX += velocityY;
 
             if(rotX > 75) rotX = 75;
             if(rotX < -75) rotX = -75;
 
-            cardObj.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            updateTransform();
 
             startX = e.clientX;
             startY = e.clientY;
@@ -731,8 +763,24 @@
             if(!isDragging) return;
             isDragging = false;
 
+            // ① 慣性アニメーションでなめらかに減速
+            function applyInertia() {
+                if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) return;
+                velocityX *= 0.90;
+                velocityY *= 0.90;
+
+                rotY += velocityX;
+                rotX += velocityY;
+                rotX = Math.max(-75, Math.min(75, rotX));
+
+                updateTransform();
+                animationFrameId = requestAnimationFrame(applyInertia);
+            }
+            animationFrameId = requestAnimationFrame(applyInertia);
+
+            // 複数枚（パック開封中）のときのスワイプで次/前のカード切り替え
             let diff = e.clientX - touchStartX;
-            if(Math.abs(diff) > 50 && Math.abs(rotY) < 45 && openedBatchCards.length > 1) {
+            if(Math.abs(diff) > 60 && Math.abs(rotY) < 30 && openedBatchCards.length > 1) {
                 if(diff < 0) {
                     currentCardIndex = (currentCardIndex + 1) % openedBatchCards.length;
                 } else {
@@ -741,6 +789,66 @@
                 renderCurrentCardView();
             }
         });
+    }
+
+    // ==========================================
+    // ② 最高レア(UR/SSR)用 花火パーティクルシステム
+    // ==========================================
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.onresize = resizeCanvas;
+    resizeCanvas();
+
+    function triggerFireworks() {
+        particles = [];
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+
+        for (let i = 0; i < 90; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 10 + 3;
+            particles.push({
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                alpha: 1,
+                color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                size: Math.random() * 5 + 2
+            });
+        }
+        animateFireworks();
+    }
+
+    function animateFireworks() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (particles.length === 0) return;
+
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // 重力
+            p.alpha -= 0.02;
+
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        particles = particles.filter(p => p.alpha > 0);
+        if (particles.length > 0) {
+            requestAnimationFrame(animateFireworks);
+        }
     }
 </script>
 
