@@ -301,7 +301,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.1</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.3</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -527,6 +527,7 @@
 
     const fallbackImg = getFallbackImage();
 
+    // 画像を軽量化（圧縮）してBase64にする関数（容量オーバー対策）
     function compressImage(img, callback) {
         try {
             const canvas = document.createElement('canvas');
@@ -556,14 +557,22 @@
             if (savedDex) {
                 const rawData = JSON.parse(savedDex);
                 if (Array.isArray(rawData) && rawData.length > 0) {
-                    collectionDex = rawData;
+                    collectionDex = rawData.map(item => {
+                        const img = new Image();
+                        img.src = item.imageSrc || fallbackImg.src;
+                        return {
+                            ...item,
+                            image: img
+                        };
+                    });
                     return;
                 }
             }
         } catch(e) {}
         
-        // 初期テストカード
+        // 万が一データが空の場合の初期テストカード
         collectionDex = [{
+            image: fallbackImg,
             rarity: "UR",
             name: "初期の 伝説ゴリラ",
             hp: 999,
@@ -578,7 +587,19 @@
 
     function saveDexToStorage() {
         try {
-            localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
+            const serializable = collectionDex.map(card => {
+                return {
+                    name: card.name,
+                    rarity: card.rarity,
+                    hp: card.hp,
+                    type: card.type,
+                    moveName: card.moveName,
+                    moveDesc: card.moveDesc,
+                    damage: card.damage,
+                    imageSrc: card.imageSrc || (card.image && card.image.src ? card.image.src : fallbackImg.src)
+                };
+            });
+            localStorage.setItem('pocket_mon_dex', JSON.stringify(serializable));
         } catch(e) {}
     }
 
@@ -659,7 +680,9 @@
                 const img = new Image();
                 img.onload = function() {
                     compressImage(img, (compressedSrc) => {
-                        loadedImageObjects.push(compressedSrc);
+                        const compImg = new Image();
+                        compImg.src = compressedSrc;
+                        loadedImageObjects.push(compImg);
                         loadedCount++;
                         statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
                         
@@ -677,7 +700,7 @@
 
     function tryOpenPack() {
         if (loadedImageObjects.length === 0) {
-            loadedImageObjects.push(fallbackImg.src);
+            loadedImageObjects.push(fallbackImg);
         }
         generateBatchCards();
 
@@ -747,7 +770,7 @@
         hasHighRarityInBatch = false;
 
         for (let i = 0; i < 5; i++) {
-            const randImgSrc = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)] || fallbackImg.src;
+            const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)] || fallbackImg;
             const rRand = Math.random();
             let rarity = "★";
             if (rRand > 0.90) {
@@ -765,6 +788,7 @@
             const flavorText = getRandomItem(chaoticFlavors);
 
             const card = {
+                image: randImg,
                 rarity: rarity,
                 name: cardName,
                 hp: Math.floor(Math.random() * 800 + 100),
@@ -772,7 +796,7 @@
                 moveName: moveName,
                 moveDesc: flavorText,
                 damage: Math.floor(Math.random() * 300 + 50),
-                imageSrc: randImgSrc
+                imageSrc: randImg.src || fallbackImg.src
             };
             openedBatchCards.push(card);
 
@@ -914,11 +938,9 @@
         ctx.lineWidth = 4;
         ctx.strokeRect(40, 85, canvas.width - 80, 430);
 
-        // 画像の即時描画（非同期ブロック防止）
-        const img = new Image();
-        img.src = card.imageSrc || fallbackImg.src;
         try {
-            ctx.drawImage(img, 42, 87, canvas.width - 84, 426);
+            const imgToDraw = (card.image && card.image.complete && card.image.naturalWidth !== 0) ? card.image : fallbackImg;
+            ctx.drawImage(imgToDraw, 42, 87, canvas.width - 84, 426);
         } catch(e) {
             ctx.drawImage(fallbackImg, 42, 87, canvas.width - 84, 426);
         }
@@ -1124,7 +1146,7 @@
     }
 
     // ==========================================
-    // 獲得カード図鑑 (完全直結・確実な一括描画)
+    // 獲得カード図鑑 (確実な一覧サムネイル描画)
     // ==========================================
     function openDex() {
         loadDexFromStorage();
@@ -1144,8 +1166,20 @@
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 270; thumbCanvas.height = 410;
             
-            // 各カードデータをダイレクトにキャンバスへ即時レンダリング
-            renderCardCanvas(card, 0, 0, thumbCanvas);
+            if (!card.image) {
+                card.image = new Image();
+                card.image.src = card.imageSrc || fallbackImg.src;
+            }
+
+            if (card.image.complete && card.image.naturalWidth !== 0) {
+                renderCardCanvas(card, 0, 0, thumbCanvas);
+            } else {
+                card.image.onload = () => {
+                    renderCardCanvas(card, 0, 0, thumbCanvas);
+                };
+                renderCardCanvas(card, 0, 0, thumbCanvas);
+            }
+            
             item.appendChild(thumbCanvas);
             
             // タップで1枚表示＆360度鑑賞モードへ
