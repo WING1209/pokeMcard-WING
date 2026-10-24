@@ -116,9 +116,11 @@
             background: #000;
             justify-content: center;
         }
+        
+        /* 開封前のパック（通常） */
         .rip-pack {
-            width: 180px;
-            height: 250px;
+            width: 190px;
+            height: 270px;
             background: linear-gradient(135deg, #e74c3c, #8e44ad);
             border-radius: 15px;
             border: 4px solid #f1c40f;
@@ -134,13 +136,27 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
         
+        /* 高レア確定時のレインボーパック演出 */
+        .rip-pack.rainbow-pack {
+            background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
+            background-size: 400% 400%;
+            border-color: #ffffff;
+            box-shadow: 0 0 40px #ffff00, 0 0 80px #00ffff;
+            animation: rainbowFlow 2s ease infinite, pulse 1s infinite;
+        }
+        @keyframes rainbowFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         .ripping {
-            transform: scale(1.3) rotate(20deg) !important;
+            transform: scale(1.35) rotate(25deg) !important;
             opacity: 0 !important;
             transition: all 0.5s ease-out !important;
         }
 
-        /* 3Dカードコンテナ（厚み対応） */
+        /* 3Dカードコンテナ */
         .card-view-container {
             perspective: 1400px;
             width: 260px;
@@ -176,38 +192,25 @@
             display: block;
         }
         .card-back {
-            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
-            border: 4px solid #f1c40f;
+            background: #111;
+            border-radius: 12px;
             transform: rotateY(180deg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 25px;
-            text-align: center;
+            overflow: hidden;
         }
-        .card-back h3 {
-            color: #f1c40f;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            text-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
+        .card-back canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 12px;
         }
-        .card-back p {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: #ecf0f1;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+
         .card-edge {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             border-radius: 12px;
-            background: #d4ac0d;
+            background: linear-gradient(135deg, #f1c40f, #e74c3c, #9b59b6);
             transform: translateZ(-2px);
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
         }
 
         .dex-grid {
@@ -262,7 +265,6 @@
         
         #folderInput { display: none; }
         
-        /* パーティクル（花火）用Canvasを最前面に配置 */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -281,7 +283,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.2 </p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.0 </p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -328,8 +330,9 @@
     <div id="openingScreen" class="screen">
         <h2 id="openingHeaderTitle" style="margin:0;">パック開封！</h2>
         <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+            <!-- パック本体（期待値に応じて虹色に変形） -->
             <div class="rip-pack" id="ripPackObj" onclick="executeRip()">
-                <span>タップして<br>開封！！</span>
+                <span id="packLabelText">タップして<br>開封！！</span>
             </div>
         </div>
         <div></div>
@@ -349,8 +352,7 @@
                     <canvas class="card-canvas" id="resultCanvas" width="520" height="800"></canvas>
                 </div>
                 <div class="card-face card-back">
-                    <h3>🌀 カオス生態メモ</h3>
-                    <p id="cardBackFlavor">ここにカオスな文章が表示されます。</p>
+                    <canvas class="card-canvas" id="backCanvas" width="520" height="800"></canvas>
                 </div>
             </div>
         </div>
@@ -400,7 +402,7 @@
     }
 
     // ==========================================
-    // 効果音 (SE) & 派手な爆発・花火サウンド
+    // 超ド派手な効果音システム (Web Audio API)
     // ==========================================
     function playSE(type) {
         try {
@@ -411,32 +413,42 @@
             const gain = ctx.createGain();
 
             if (type === 'firework') {
-                // 花火のドーンという重低音＋高音スパーク
+                // ドーンという重低音爆発＋スパーク音
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.8);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
             } else if (type === 'ur_rare') {
-                // UR獲得時の神々しいファンファーレ音
+                // UR獲得時の神々しい超ド派手ファンファーレ
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.setValueAtTime(659.25, now + 0.1);
-                osc.frequency.setValueAtTime(783.99, now + 0.2);
-                osc.frequency.setValueAtTime(1046.50, now + 0.3);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.15);
+                osc.frequency.setValueAtTime(659.25, now + 0.3);
+                osc.frequency.setValueAtTime(880, now + 0.45);
+                osc.frequency.setValueAtTime(1108.73, now + 0.6);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            } else if (type === 'rip') {
+                // パックをバリバリっと破る豪快なサウンド
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.15);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             } else {
-                // 通常の選択音
+                // 通常選択音
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
-                gain.gain.setValueAtTime(0.08, now);
+                osc.frequency.setValueAtTime(700, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
+                gain.gain.setValueAtTime(0.1, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
             }
 
             osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(now); osc.stop(now + (type === 'firework' ? 0.6 : (type === 'ur_rare' ? 0.7 : 0.05)));
+            osc.start(now); 
+            osc.stop(now + (type === 'ur_rare' ? 1.2 : (type === 'firework' ? 0.8 : (type === 'rip' ? 0.3 : 0.05))));
         } catch(e) {}
     }
 
@@ -471,6 +483,7 @@
     let currentCardIndex = 0;
     let collectionDex = [];
     let isViewingDexCard = false;
+    let hasHighRarityInBatch = false; // パック内に高レアが入っているか
 
     try {
         collectionDex = JSON.parse(localStorage.getItem('pocket_mon_dex') || '[]');
@@ -569,22 +582,36 @@
         return img;
     }
 
+    // パック開封ボタンを押したとき、中身の抽選を先に行い「期待値（虹色パック）」を判定する
     function tryOpenPack() {
         if (loadedImageObjects.length === 0) {
             loadedImageObjects.push(getFallbackImage());
         }
+        generateBatchCards(); // 先に中身を生成
+
+        // パック外観のセット（高レアが1枚でも入っていればレインボーパックに！）
+        const packObj = document.getElementById('ripPackObj');
+        const packLabel = document.getElementById('packLabelText');
+        
+        if (hasHighRarityInBatch) {
+            packObj.classList.add('rainbow-pack');
+            packLabel.innerHTML = "✨ 激レア封入！<br>タップして開封！！";
+        } else {
+            packObj.classList.remove('rainbow-pack');
+            packLabel.innerHTML = "タップして<br>開封！！";
+        }
+
         showScreen('openingScreen');
     }
 
     function executeRip() {
-        playSE('select');
+        playSE('rip');
         const packObj = document.getElementById('ripPackObj');
         packObj.classList.add('ripping');
 
         setTimeout(() => {
             packObj.classList.remove('ripping');
             stopTitleBGM(); 
-            generateBatchCards();
             currentCardIndex = 0;
             isViewingDexCard = false;
             document.getElementById('resultActionBar').style.display = 'flex';
@@ -594,18 +621,25 @@
     }
 
     // ==========================================
-    // レア度抽選
+    // レア度抽選 (5枚中どこに出るかワクワク)
     // ==========================================
     function generateBatchCards() {
         openedBatchCards = [];
+        hasHighRarityInBatch = false;
 
         for (let i = 0; i < 5; i++) {
             const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
             const rRand = Math.random();
             let rarity = "★";
-            if (rRand > 0.92) rarity = "UR";
-            else if (rRand > 0.75) rarity = "★★★";
-            else if (rRand > 0.45) rarity = "★★";
+            if (rRand > 0.90) {
+                rarity = "UR";
+                hasHighRarityInBatch = true;
+            } else if (rRand > 0.70) {
+                rarity = "★★★";
+                hasHighRarityInBatch = true;
+            } else if (rRand > 0.40) {
+                rarity = "★★";
+            }
 
             const cardName = getRandomItem(adjParts) + " " + getRandomItem(nounParts);
             const moveName = getRandomItem(attackParts);
@@ -631,7 +665,64 @@
     }
 
     // ==========================================
-    // 描画 ＆ レア演出発火
+    // カード裏面（多色グラデーション・サイバー宇宙デザイン）描画
+    // ==========================================
+    function renderCardBackCanvas() {
+        const canvas = document.getElementById('backCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. 多色メタリック宇宙グラデーション背景
+        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        grad.addColorStop(0, '#1a0033');
+        grad.addColorStop(0.3, '#330066');
+        grad.addColorStop(0.6, '#003366');
+        grad.addColorStop(1, '#001a1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. サイバー幾何学フレーム
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+
+        // 3. 多色ネオンサークル＆紋章
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+
+        const circleGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 150);
+        circleGrad.addColorStop(0, '#e74c3c');
+        circleGrad.addColorStop(0.5, '#9b59b6');
+        circleGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = circleGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 150, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 中央ロゴマーク
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 36px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 15;
+        ctx.fillText("★ POCKET ★", 0, -10);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.shadowBlur = 0;
+        ctx.fillText("MONSTER CARD", 0, 35);
+
+        ctx.restore();
+    }
+    renderCardBackCanvas(); // 起動時に裏面を描画
+
+    // ==========================================
+    // 表面描画 ＆ 超ド派手演出発火
     // ==========================================
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
@@ -640,13 +731,13 @@
 
         renderCardCanvas(card, 0, 0);
 
-        // レアカードが出たときの花火演出
+        // レアカードが出たときの超ド派手演出
         if (card.rarity === "UR") {
             playSE('ur_rare');
-            triggerFireworks('rainbow');
+            triggerSuperFireworks('ur');
         } else if (card.rarity === "★★★") {
             playSE('firework');
-            triggerFireworks('gold');
+            triggerSuperFireworks('gold');
         }
     }
 
@@ -658,8 +749,9 @@
         if (card.rarity === "UR") {
             const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradFrame.addColorStop(0, '#ff007f');
-            gradFrame.addColorStop(0.5, '#7f00ff');
-            gradFrame.addColorStop(1, '#00ffff');
+            gradFrame.addColorStop(0.3, '#7f00ff');
+            gradFrame.addColorStop(0.7, '#00ffff');
+            gradFrame.addColorStop(1, '#ffff00');
             ctx.fillStyle = gradFrame;
         } else if (card.rarity === "★★★") {
             const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -705,17 +797,18 @@
             ctx.drawImage(card.image, 42, 87, canvas.width - 84, 426);
         }
 
+        // 激しいホログラム光沢
         if (card.rarity === "★★★" || card.rarity === "UR") {
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
-            let lightX = (canvas.width / 2) + (rotY * 20);
-            let lightY = (canvas.height / 2) + (rotX * 20);
+            let lightX = (canvas.width / 2) + (rotY * 25);
+            let lightY = (canvas.height / 2) + (rotX * 25);
 
-            const holoGrad = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, 300);
-            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-            holoGrad.addColorStop(0.25, 'rgba(255, 0, 128, 0.5)');
-            holoGrad.addColorStop(0.5, 'rgba(0, 255, 255, 0.5)');
-            holoGrad.addColorStop(0.75, 'rgba(255, 255, 0, 0.5)');
+            const holoGrad = ctx.createRadialGradient(lightX, lightY, 10, lightX, lightY, 350);
+            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            holoGrad.addColorStop(0.2, 'rgba(255, 0, 128, 0.6)');
+            holoGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.6)');
+            holoGrad.addColorStop(0.7, 'rgba(255, 255, 0, 0.6)');
             holoGrad.addColorStop(1, 'transparent');
 
             ctx.fillStyle = holoGrad;
@@ -889,7 +982,6 @@
 
             item.appendChild(img);
             
-            // タップされたら1枚表示の360度鑑賞モードへ
             item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
@@ -906,7 +998,7 @@
     }
 
     // ==========================================
-    // 花火＆パーティクル演出システム
+    // 超ド派手な花火＆スパーク演出システム
     // ==========================================
     const pCanvas = document.getElementById('particleCanvas');
     const pCtx = pCanvas.getContext('2d');
@@ -915,35 +1007,41 @@
 
     let activeFireworks = [];
 
-    function triggerFireworks(type) {
+    function triggerSuperFireworks(type) {
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
-        const count = type === 'rainbow' ? 80 : 50;
+        const count = type === 'ur' ? 120 : 70;
 
-        for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 6 + 2;
-            let color = '#f1c40f';
-            if (type === 'rainbow') {
-                const colors = ['#ff007f', '#00ffff', '#ffff00', '#7f00ff', '#ff4500'];
-                color = colors[Math.floor(Math.random() * colors.length)];
+        // 複数方向から同時に花火が打ちあがるパターン
+        const bursts = type === 'ur' ? 3 : 1;
+        for (let b = 0; b < bursts; b++) {
+            let bx = cx + (Math.random() * 200 - 100);
+            let by = cy + (Math.random() * 200 - 100);
+
+            for (let i = 0; i < count / bursts; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 3;
+                let color = '#f1c40f';
+                if (type === 'ur') {
+                    const colors = ['#ff007f', '#00ffff', '#ffff00', '#7f00ff', '#ff4500', '#ffffff'];
+                    color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                activeFireworks.push({
+                    x: bx,
+                    y: by,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: Math.random() * 5 + 2,
+                    color: color,
+                    alpha: 1.0,
+                    decay: Math.random() * 0.015 + 0.01
+                });
             }
-            activeFireworks.push({
-                x: cx,
-                y: cy,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                size: Math.random() * 4 + 2,
-                color: color,
-                alpha: 1.0,
-                decay: Math.random() * 0.02 + 0.015
-            });
         }
     }
 
-    // 背景の通常パーティクルと花火を同時に動かすアニメーションループ
     let ambientParticles = [];
-    for(let i=0; i<30; i++) {
+    for(let i=0; i<35; i++) {
         ambientParticles.push({
             x: Math.random() * pCanvas.width,
             y: Math.random() * pCanvas.height,
@@ -955,7 +1053,6 @@
     function animateParticles() {
         pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
 
-        // 通常の浮遊パーティクル
         pCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ambientParticles.forEach(p => {
             p.y -= p.speed;
@@ -965,12 +1062,11 @@
             pCtx.fill();
         });
 
-        // 打ち上げ花火のパーティクル
         if (activeFireworks.length > 0) {
             activeFireworks.forEach((fp, index) => {
                 fp.x += fp.vx;
                 fp.y += fp.vy;
-                fp.vy += 0.05; // 重力
+                fp.vy += 0.04; 
                 fp.alpha -= fp.decay;
 
                 if (fp.alpha <= 0) {
@@ -992,7 +1088,6 @@
     }
     animateParticles();
 
-    // 画面サイズ変更時のCanvas追従
     window.addEventListener('resize', () => {
         pCanvas.width = window.innerWidth;
         pCanvas.height = window.innerHeight;
