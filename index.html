@@ -274,6 +274,9 @@
 </head>
 <body>
 
+    <!-- 安全なHTMLオーディオ要素 -->
+    <audio id="bgmAudio" src="title_bgm.mp3" preload="auto" loop></audio>
+
     <canvas id="particleCanvas"></canvas>
     <div id="flashOverlay"></div>
 
@@ -282,7 +285,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1,3</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.5</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -373,39 +376,33 @@
 
 <script>
     // ==========================================
-    // 超安全なタイトルBGM制御（ファイルがなくても絶対に止まらない）
+    // オーディオ（HTML Audioタグを使用）
     // ==========================================
-    let titleBgm = null;
-    try {
-        titleBgm = new Audio('title_bgm.mp3');
-        titleBgm.loop = true;
-        titleBgm.volume = 0.4;
-        titleBgm.preload = 'auto';
-    } catch(e) {}
+    const bgm = document.getElementById('bgmAudio');
+    bgm.volume = 0.4;
 
     const titleScreenEl = document.getElementById('titleScreen');
     
+    // タイトル画面タップ時の処理（確実にBGMを鳴らしてメニューへ）
     function handleTitleInteraction(e) {
-        if (e) e.preventDefault();
+        if (e) e.stopPropagation();
         
-        if (titleBgm) {
-            titleBgm.play().catch(() => {});
-        }
+        bgm.play().catch(err => {
+            console.log("Audio play blocked or missing:", err);
+        });
         
-        // 100%確実にメニューへ進む
         goToMenu();
     }
 
-    titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
+    // Android/iOSの両方で確実に反応するよう複数のイベントリスナーを設置
+    titleScreenEl.addEventListener('touchend', handleTitleInteraction, { passive: true });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
     function stopTitleBGM() {
-        if (titleBgm) {
-            try {
-                titleBgm.pause();
-                titleBgm.currentTime = 0;
-            } catch(e) {}
-        }
+        try {
+            bgm.pause();
+            bgm.currentTime = 0;
+        } catch(e) {}
     }
 
     function playSE(type) {
@@ -509,8 +506,8 @@
         showScreen('titleScreen'); 
     }
     function goToMenu() { 
-        if(titleBgm) {
-            titleBgm.play().catch(() => {});
+        if(bgm.paused) {
+            bgm.play().catch(() => {});
         }
         showScreen('menuScreen'); 
     }
@@ -519,41 +516,41 @@
     }
 
     // ボタンのイベント割り当て
-    document.getElementById('menuPackBtn').addEventListener('touchstart', () => { playSE('select'); startPackSelect(); });
+    document.getElementById('menuPackBtn').addEventListener('touchend', () => { playSE('select'); startPackSelect(); });
     document.getElementById('menuPackBtn').addEventListener('click', () => { playSE('select'); startPackSelect(); });
 
-    document.getElementById('menuDexBtn').addEventListener('touchstart', () => { playSE('select'); openDex(); });
+    document.getElementById('menuDexBtn').addEventListener('touchend', () => { playSE('select'); openDex(); });
     document.getElementById('menuDexBtn').addEventListener('click', () => { playSE('select'); openDex(); });
 
-    document.getElementById('menuTitleBtn').addEventListener('touchstart', () => { playSE('select'); goToTitle(); });
+    document.getElementById('menuTitleBtn').addEventListener('touchend', () => { playSE('select'); goToTitle(); });
     document.getElementById('menuTitleBtn').addEventListener('click', () => { playSE('select'); goToTitle(); });
 
-    document.getElementById('packBackBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('packBackBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
     document.getElementById('packBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
 
-    document.getElementById('resultMenuBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('resultMenuBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
     document.getElementById('resultMenuBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
 
-    document.getElementById('dexBackBtn').addEventListener('touchstart', () => { playSE('select'); goToMenu(); });
+    document.getElementById('dexBackBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
     document.getElementById('dexBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
 
-    document.getElementById('selectFolderBtn').addEventListener('touchstart', () => { playSE('select'); triggerFolderSelect(); });
+    document.getElementById('selectFolderBtn').addEventListener('touchend', () => { playSE('select'); triggerFolderSelect(); });
     document.getElementById('selectFolderBtn').addEventListener('click', () => { playSE('select'); triggerFolderSelect(); });
 
-    document.getElementById('openPackBtn').addEventListener('touchstart', () => { playSE('select'); tryOpenPack(); });
+    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('select'); tryOpenPack(); });
     document.getElementById('openPackBtn').addEventListener('click', () => { playSE('select'); tryOpenPack(); });
 
-    document.getElementById('nextCardBtn').addEventListener('touchstart', () => { nextCard(); });
+    document.getElementById('nextCardBtn').addEventListener('touchend', () => { nextCard(); });
     document.getElementById('nextCardBtn').addEventListener('click', () => { nextCard(); });
 
-    document.getElementById('prevCardBtn').addEventListener('touchstart', () => { prevCard(); });
+    document.getElementById('prevCardBtn').addEventListener('touchend', () => { prevCard(); });
     document.getElementById('prevCardBtn').addEventListener('click', () => { prevCard(); });
 
-    document.getElementById('packBlue').addEventListener('touchstart', () => { playSE('select'); selectPack(1); });
+    document.getElementById('packBlue').addEventListener('touchend', () => { playSE('select'); selectPack(1); });
     document.getElementById('packBlue').addEventListener('click', () => { playSE('select'); selectPack(1); });
-    document.getElementById('packRed').addEventListener('touchstart', () => { playSE('select'); selectPack(0); });
+    document.getElementById('packRed').addEventListener('touchend', () => { playSE('select'); selectPack(0); });
     document.getElementById('packRed').addEventListener('click', () => { playSE('select'); selectPack(0); });
-    document.getElementById('packGreen').addEventListener('touchstart', () => { playSE('select'); selectPack(2); });
+    document.getElementById('packGreen').addEventListener('touchend', () => { playSE('select'); selectPack(2); });
     document.getElementById('packGreen').addEventListener('click', () => { playSE('select'); selectPack(2); });
 
     function selectPack(type) {
@@ -971,3 +968,189 @@
         startRotX = currentRotX;
         startRotY = currentRotY;
     });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        let deltaX = e.touches[0].clientX - startX;
+        let deltaY = e.touches[0].clientY - startY;
+
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+        }
+
+        currentRotY = startRotY + (deltaX * 0.4);
+        currentRotX = startRotX - (deltaY * 0.4);
+        updateCardTransform();
+
+        if (openedBatchCards[currentCardIndex]) {
+            renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
+        }
+    });
+
+    window.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (!hasMoved) {
+            isFlipped = !isFlipped;
+            playSE('appear');
+            updateCardTransform();
+        }
+    });
+
+    function resetCardFlip() {
+        isFlipped = false;
+        currentRotX = 0;
+        currentRotY = 0;
+        startRotX = 0;
+        startRotY = 0;
+        updateCardTransform();
+        if (openedBatchCards[currentCardIndex]) {
+            renderCardCanvas(openedBatchCards[currentCardIndex], 0, 0);
+        }
+    }
+
+    function updateCardTransform() {
+        let flipDeg = isFlipped ? 180 : 0;
+        cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
+    }
+
+    function openDex() {
+        isViewingDexCard = false;
+        showScreen('dexScreen');
+        const grid = document.getElementById('dexGrid');
+        grid.innerHTML = '';
+
+        if (collectionDex.length === 0) {
+            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
+            return;
+        }
+
+        collectionDex.forEach((card) => {
+            const item = document.createElement('div');
+            item.className = 'dex-item';
+            
+            const img = document.createElement('img');
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = 150; tmpCanvas.height = 230;
+            const tCtx = tmpCanvas.getContext('2d');
+            tCtx.drawImage(card.image, 0, 0, 150, 230);
+            img.src = tmpCanvas.toDataURL();
+
+            item.appendChild(img);
+            
+            const openCardDetail = () => {
+                playSE('select');
+                isViewingDexCard = true;
+                openedBatchCards = [card]; 
+                currentCardIndex = 0;
+                document.getElementById('resultActionBar').style.display = 'flex';
+                showScreen('cardResultScreen');
+                displayCurrentCard();
+                resetCardFlip();
+            };
+
+            item.addEventListener('touchend', openCardDetail);
+            item.addEventListener('click', openCardDetail);
+
+            grid.appendChild(item);
+        });
+    }
+
+    // ==========================================
+    // パーティクル＆花火システム
+    // ==========================================
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+
+    let activeFireworks = [];
+
+    function triggerSuperFireworks(type) {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const count = type === 'ur' ? 140 : 80;
+        const bursts = type === 'ur' ? 3 : 1;
+
+        for (let b = 0; b < bursts; b++) {
+            let bx = cx + (Math.random() * 200 - 100);
+            let by = cy + (Math.random() * 200 - 100);
+
+            for (let i = 0; i < count / bursts; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 9 + 3;
+                let color = '#f1c40f';
+                if (type === 'ur') {
+                    const colors = ['#ff007f', '#00ffff', '#ffff00', '#7f00ff', '#ff4500', '#ffffff'];
+                    color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                activeFireworks.push({
+                    x: bx,
+                    y: by,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: Math.random() * 5 + 2,
+                    color: color,
+                    alpha: 1.0,
+                    decay: Math.random() * 0.012 + 0.008
+                });
+            }
+        }
+    }
+
+    let ambientParticles = [];
+    for(let i=0; i<45; i++) {
+        ambientParticles.push({
+            x: Math.random() * pCanvas.width,
+            y: Math.random() * pCanvas.height,
+            size: Math.random() * 2 + 1.2,
+            speed: Math.random() * 0.6 + 0.3
+        });
+    }
+
+    function animateParticles() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+        pCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ambientParticles.forEach(p => {
+            p.y -= p.speed;
+            if (p.y < 0) p.y = pCanvas.height;
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            pCtx.fill();
+        });
+
+        if (activeFireworks.length > 0) {
+            activeFireworks.forEach((fp, index) => {
+                fp.x += fp.vx;
+                fp.y += fp.vy;
+                fp.vy += 0.04; 
+                fp.alpha -= fp.decay;
+
+                if (fp.alpha <= 0) {
+                    activeFireworks.splice(index, 1);
+                    return;
+                }
+
+                pCtx.save();
+                pCtx.globalAlpha = fp.alpha;
+                pCtx.fillStyle = fp.color;
+                pCtx.beginPath();
+                pCtx.arc(fp.x, fp.y, fp.size, 0, Math.PI * 2);
+                pCtx.fill();
+                pCtx.restore();
+            });
+        }
+
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    window.addEventListener('resize', () => {
+        pCanvas.width = window.innerWidth;
+        pCanvas.height = window.innerHeight;
+    });
+</script>
+</body>
+</html>
