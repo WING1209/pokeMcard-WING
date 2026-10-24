@@ -253,7 +253,6 @@
         
         #folderInput { display: none; }
         
-        /* パーティクル＆花火用Canvas（最前面） */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -283,7 +282,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.2 (完全版)</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1,3</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -374,31 +373,39 @@
 
 <script>
     // ==========================================
-    // スマホBGM & オーディオ制御（安全確実に再生）
+    // 超安全なタイトルBGM制御（ファイルがなくても絶対に止まらない）
     // ==========================================
-    const titleBgm = new Audio('title_bgm.mp3');
-    titleBgm.loop = true;
-    titleBgm.volume = 0.4;
-    titleBgm.preload = 'auto';
+    let titleBgm = null;
+    try {
+        titleBgm = new Audio('title_bgm.mp3');
+        titleBgm.loop = true;
+        titleBgm.volume = 0.4;
+        titleBgm.preload = 'auto';
+    } catch(e) {}
 
     const titleScreenEl = document.getElementById('titleScreen');
     
     function handleTitleInteraction(e) {
         if (e) e.preventDefault();
         
-        // タップされた瞬間にBGM再生を試みる（ブロックされても画面遷移は絶対に止まらない）
-        titleBgm.play().catch(() => {});
+        if (titleBgm) {
+            titleBgm.play().catch(() => {});
+        }
         
+        // 100%確実にメニューへ進む
         goToMenu();
     }
 
-    // タッチ＆クリック両方で100%確実に反応
     titleScreenEl.addEventListener('touchstart', handleTitleInteraction, { passive: false });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
     function stopTitleBGM() {
-        titleBgm.pause();
-        titleBgm.currentTime = 0;
+        if (titleBgm) {
+            try {
+                titleBgm.pause();
+                titleBgm.currentTime = 0;
+            } catch(e) {}
+        }
     }
 
     function playSE(type) {
@@ -502,7 +509,7 @@
         showScreen('titleScreen'); 
     }
     function goToMenu() { 
-        if(titleBgm.paused) {
+        if(titleBgm) {
             titleBgm.play().catch(() => {});
         }
         showScreen('menuScreen'); 
@@ -964,10 +971,3 @@
         startRotX = currentRotX;
         startRotY = currentRotY;
     });
-
-    window.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
-        let deltaX = e.touches[0].clientX - startX;
-        let deltaY = e.touches[0].clientY - startY;
-
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY)
