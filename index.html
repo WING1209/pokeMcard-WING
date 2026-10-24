@@ -17,7 +17,6 @@
             color: #fff;
         }
 
-        /* 各画面の基本スタイル */
         .screen {
             display: none;
             width: 100%;
@@ -35,7 +34,6 @@
             display: flex;
         }
 
-        /* タイトル画面 */
         #titleScreen {
             justify-content: center;
             text-align: center;
@@ -55,7 +53,6 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-        /* メニュー・共通ボタン */
         .menu-btn {
             background: linear-gradient(135deg, #e74c3c, #f39c12);
             color: white;
@@ -71,7 +68,6 @@
             cursor: pointer;
         }
 
-        /* パック選択画面 */
         .pack-container {
             display: flex;
             gap: 10px;
@@ -108,7 +104,6 @@
             max-width: 300px;
         }
 
-        /* 開封画面 */
         #openingScreen {
             background: #000;
             justify-content: center;
@@ -142,11 +137,10 @@
             transition: all 0.5s ease-out !important;
         }
 
-        /* カード閲覧画面 */
         .card-view-container {
-            width: 260px;
-            height: 360px;
-            margin: 10px auto;
+            width: 280px;
+            height: 390px;
+            margin: 5px auto;
             position: relative;
         }
         .card-3d-box {
@@ -163,7 +157,6 @@
             display: block;
         }
 
-        /* 図鑑画面 */
         .dex-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -222,7 +215,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">写真フォルダから生まれるコレクション</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">摩訶不思議カオス文章ジェネレーター</p>
         </div>
         <div class="blink-start">▶ スタートをタップ</div>
     </div>
@@ -248,14 +241,13 @@
             <div class="pack-item" style="background: linear-gradient(135deg, #2ecc71, #27ae60);" onclick="selectPack(2)">緑パック<br>草</div>
         </div>
 
-        <div class="folder-status" id="folderStatusText">📁 写真フォルダ、または複数の写真を選択してください</div>
+        <div class="folder-status" id="folderStatusText">📁 スマホの写真を選択してください</div>
 
-        <div style="text-align:center; margin: 10px 0;">
-            <span style="font-size: 3rem;">🎁</span>
+        <div style="text-align:center; margin: 5px 0;">
+            <span style="font-size: 2.5rem;">🎁</span>
             <div id="packNameLabel" style="font-weight:bold; font-size:0.9rem;">青パック</div>
         </div>
 
-        <!-- Android対応：確実に画像を取得するためのインプット -->
         <input type="file" id="folderInput" multiple accept="image/*">
         
         <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -280,7 +272,7 @@
     <div id="cardResultScreen" class="screen">
         <div>
             <div id="rarityHeader" style="font-size:1.1rem; font-weight:bold; color:#f1c40f; text-align:center;">★☆☆</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 5px 0; text-align:center;">左右スワイプで切替 (全5枚)</p>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">左右スワイプで切替 (全5枚)</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -311,7 +303,6 @@
     let currentCardIndex = 0;
     let collectionDex = [];
 
-    // ローカルストレージの安全な読み込み
     try {
         collectionDex = JSON.parse(localStorage.getItem('pocket_mon_dex') || '[]');
     } catch(e) {
@@ -326,9 +317,7 @@
             screens.forEach(s => s.classList.remove('active'));
             const target = document.getElementById(screenId);
             if(target) target.classList.add('active');
-        } catch(e) {
-            console.error(e);
-        }
+        } catch(e) {}
     }
 
     function goToTitle() { showScreen('titleScreen'); }
@@ -352,7 +341,6 @@
         if(input) input.click();
     }
 
-    // Android完全対応：複数選択（multiple）により確実に対象画像を取り込む
     document.getElementById('folderInput').addEventListener('change', function(e) {
         const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
         if (files.length === 0) {
@@ -383,9 +371,7 @@
                         }
                     }
                 };
-                img.onerror = function() {
-                    loadedCount++;
-                };
+                img.onerror = function() { loadedCount++; };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
@@ -418,9 +404,46 @@
         showScreen('openingScreen');
     }
 
-    const adjList = ["伝説の", "幻の", "ひなたぼっこの", "爆走する", "お寝坊な", "ピカピカの", "気まぐれな", "覚醒した"];
-    const nounList = ["メモリー", "スナップ", "ワンダー", "モーメント", "フォトン", "ブレイク", "ガーディアン"];
-    const attackList = ["思い出ビーム", "シャッターラッシュ", "エモい衝撃", "フラッシュ記憶", "無限メモリー", "超光速スナップ"];
+    // --- 摩訶不思議・カオス文章自動生成パーツ ---
+    const adjParts = ["宇宙的", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
+    const nounParts = ["スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
+    const attackParts = ["未知へのパルプンテ", "唐突なマントル", "全方位お昼寝", "無限エントロピー", "意味不明の突撃", "エモさの過剰摂取", "真夜中の冷蔵庫漁り"];
+    const chaoticFlavors = [
+        "なぜか突然、全方角に向かって正座をはじめる習性がある。",
+        "この写真を見ると、3日前の晩御飯の記憶が消え去る。",
+        "「たぶん気のせい」の一言で世界の理をねじ曲げる。",
+        "ポケットの中で勝手に発酵し、ほのかに甘い香りがする。",
+        "周囲の空気を完全に無視してマイペースに浮遊する。",
+        "意思を持つかのように、勝手にスマホの画面を連打する。",
+        "概念がゲシュタルト崩壊を起こし、形而上学的な何かを生成する。"
+    ];
+
+    function generateChaosCardData() {
+        const name = adjParts[Math.floor(Math.random() * adjParts.length)] + nounParts[Math.floor(Math.random() * nounParts.length)];
+        const attack = attackParts[Math.floor(Math.random() * attackParts.length)];
+        const flavor = chaoticFlavors[Math.floor(Math.random() * chaoticFlavors.length)];
+        const hp = Math.floor(Math.random() * 800) + 10;
+        const damage = Math.floor(Math.random() * 9999) + 50;
+
+        let rRand = Math.random();
+        let rarity = "★☆☆";
+        if(rRand > 0.92) { rarity = "UR"; hasHighestRarityInBatch = true; }
+        else if(rRand > 0.82) { rarity = "SSR"; hasHighestRarityInBatch = true; }
+        else if(rRand > 0.68) rarity = "SR";
+        else if(rRand > 0.48) rarity = "★★★";
+        else if(rRand > 0.25) rarity = "★★☆";
+
+        return {
+            id: 'card_' + Date.now() + '_' + Math.random(),
+            name: name,
+            hp: hp,
+            attack: attack,
+            damage: damage,
+            rarity: rarity,
+            flavor: flavor,
+            date: new Date().toLocaleDateString()
+        };
+    }
 
     function generatePackCards() {
         openedBatchCards = [];
@@ -428,24 +451,7 @@
         
         for(let i = 0; i < 5; i++) {
             const randomImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
-
-            let rRand = Math.random();
-            let rarity = "★☆☆";
-            if(rRand > 0.92) { rarity = "UR"; hasHighestRarityInBatch = true; }
-            else if(rRand > 0.82) { rarity = "SSR"; hasHighestRarityInBatch = true; }
-            else if(rRand > 0.68) rarity = "SR";
-            else if(rRand > 0.48) rarity = "★★★";
-            else if(rRand > 0.25) rarity = "★★☆";
-
-            const cardData = {
-                id: 'card_' + Date.now() + '_' + Math.random(),
-                name: adjList[Math.floor(Math.random()*adjList.length)] + nounList[Math.floor(Math.random()*nounList.length)],
-                hp: Math.floor(Math.random() * 200) + 50,
-                attack: attackList[Math.floor(Math.random()*attackList.length)],
-                damage: Math.floor(Math.random() * 120) + 20,
-                rarity: rarity,
-                date: new Date().toLocaleDateString()
-            };
+            const cardData = generateChaosCardData();
 
             cardData.dataUrl = renderCardToDataURL(cardData, randomImg);
             openedBatchCards.push(cardData);
@@ -457,11 +463,13 @@
         } catch(e) {}
     }
 
+    // キャンバスへの描画（カオス文章をきれいにカードに配置）
     function renderCardToDataURL(card, userImg) {
         const c = document.createElement('canvas');
         c.width = 600; c.height = 840;
         const ctx = c.getContext('2d');
 
+        // 背景
         const grad = ctx.createLinearGradient(0, 0, 600, 840);
         if(card.rarity === "UR" || card.rarity === "SSR") {
             grad.addColorStop(0, '#f1c40f'); grad.addColorStop(0.5, '#e74c3c'); grad.addColorStop(1, '#9b59b6');
@@ -473,47 +481,82 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 600, 840);
 
+        // フレーム
         ctx.strokeStyle = (card.rarity === "UR" || card.rarity === "SSR") ? '#fff' : '#f1c40f';
         ctx.lineWidth = 14;
         ctx.strokeRect(20, 20, 560, 800);
 
+        // ヘッダー（名前とHP）
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(35, 35, 530, 70);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 30px sans-serif';
+        ctx.font = 'bold 26px sans-serif';
         ctx.fillText(card.name, 55, 80);
         ctx.fillStyle = '#f1c40f';
-        ctx.fillText(`HP ${card.hp}`, 430, 80);
+        ctx.fillText(`HP ${card.hp}`, 420, 80);
 
+        // 写真エリア
         ctx.fillStyle = '#000';
-        ctx.fillRect(50, 130, 500, 420);
+        ctx.fillRect(50, 130, 500, 360);
         
         const iw = userImg.width, ih = userImg.height;
         let sw, sh, sx, sy;
-        if (iw / ih > 500 / 420) {
-            sh = ih; sw = ih * (500 / 420); sx = (iw - sw) / 2; sy = 0;
+        if (iw / ih > 500 / 360) {
+            sh = ih; sw = ih * (500 / 360); sx = (iw - sw) / 2; sy = 0;
         } else {
-            sw = iw; sh = iw / (500 / 420); sx = 0; sy = (ih - sh) / 2;
+            sw = iw; sh = iw / (500 / 360); sx = 0; sy = (ih - sh) / 2;
         }
-        ctx.drawImage(userImg, sx, sy, sw, sh, 50, 130, 500, 420);
+        ctx.drawImage(userImg, sx, sy, sw, sh, 50, 130, 500, 360);
 
         ctx.strokeStyle = '#bdc3c7';
         ctx.lineWidth = 4;
-        ctx.strokeRect(50, 130, 500, 420);
+        ctx.strokeRect(50, 130, 500, 360);
 
+        // 技エリア
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(35, 570, 530, 160);
+        ctx.fillRect(35, 510, 530, 100);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText(`⚡ ${card.attack}`, 60, 620);
-        ctx.font = 'bold 28px sans-serif';
-        ctx.fillText(card.damage, 490, 620);
-
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(`🌀 ${card.attack}`, 55, 555);
         ctx.font = 'bold 26px sans-serif';
+        ctx.fillText(card.damage, 470, 555);
+
+        // フレーバーテキスト（摩訶不思議・カオス文章欄）
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(35, 625, 530, 120);
+        ctx.fillStyle = '#00ffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText("【カオス効果・生態メモ】", 55, 655);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '15px sans-serif';
+        // 文章の折り返し描画
+        wrapText(ctx, card.flavor, 55, 685, 490, 22);
+
+        // レアリティ
+        ctx.font = 'bold 24px sans-serif';
         ctx.fillStyle = '#f1c40f';
-        ctx.fillText(card.rarity, 60, 775);
+        ctx.fillText(card.rarity, 55, 785);
 
         return c.toDataURL('image/png');
+    }
+
+    // キャンバス内でのテキスト折り返し用ヘルパー
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        let line = "";
+        for(let n = 0; n < text.length; n++) {
+            let testLine = line + text[n];
+            let metrics = ctx.measureText(testLine);
+            let testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line, x, y);
+                line = text[n];
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, y);
     }
 
     function executeRip() {
@@ -585,7 +628,7 @@
         link.click();
     }
 
-    // 左右スワイプによる5枚のカード切り替え（Android対応のタッチイベント）
+    // 左右スワイプによる5枚のカード切り替え
     const cardContainer = document.getElementById('cardContainer');
     let touchStartX = 0;
     
