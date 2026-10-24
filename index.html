@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ポケット門★カード</title>
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
             width: 100vw;
             height: 100vh;
@@ -264,7 +264,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver3.1</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">3D回転＆カオス効果つきコレクション</p>
             <div class="blink-start">▶ スタートをタップ</div>
         </div>
         <div></div>
@@ -369,30 +369,39 @@
 
     let hasHighestRarityInBatch = false;
 
+    // 画面切り替えの絶対安全ロジック
     function showScreen(screenId) {
         try {
             const screens = document.querySelectorAll('.screen');
-            screens.forEach(function(s) { s.classList.remove('active'); });
+            screens.forEach(function(s) {
+                s.classList.remove('active');
+            });
             const target = document.getElementById(screenId);
-            if(target) target.classList.add('active');
-        } catch(e) {}
+            if (target) {
+                target.classList.add('active');
+            } else {
+                console.error("Screen not found: " + screenId);
+            }
+        } catch(err) {
+            console.error("showScreen error:", err);
+        }
     }
 
     function goToTitle() { showScreen('titleScreen'); }
     function goToMenu() { showScreen('menuScreen'); }
     function startPackSelect() { showScreen('packSelectScreen'); }
 
-    // --- タイトル画面の確実なタップ検知設定 ---
-    document.addEventListener('DOMContentLoaded', function() {
+    // --- タイトル画面のタップ/クリック強制対応 ---
+    window.addEventListener('DOMContentLoaded', function() {
         const titleScreen = document.getElementById('titleScreen');
-        if(titleScreen) {
-            titleScreen.addEventListener('click', function() {
+        if (titleScreen) {
+            // タッチとクリックの両方で確実にメニューへ遷移させる
+            const handleTitleTap = function(e) {
+                e.stopPropagation();
                 goToMenu();
-            });
-            titleScreen.addEventListener('touchend', function(e) {
-                e.preventDefault(); // スマホでのダブルタップ拡大などを防止して即座に反応させる
-                goToMenu();
-            });
+            };
+            titleScreen.addEventListener('click', handleTitleTap);
+            titleScreen.addEventListener('touchend', handleTitleTap);
         }
     });
 
@@ -478,7 +487,7 @@
         showScreen('openingScreen');
     }
 
-     // 摩訶不思議・カオス文章自動生成パーツ
+ // 摩訶不思議・カオス文章自動生成パーツ
     const adjParts = ["お前の","貴様ら","バカどもの","ゴリラじゃん","ナルシストな君の","カステラ好きな","前髪気にしすぎ","香水つけすぎ","モテたい俺は","働きすぎな","カカロットへ","大好きな君へ","クソどもが！","いいから","イタリア生れの","宇宙的", "寝ぼけた", "解き放たれた", "爆誕した", "液体状の", "量子もつれの", "深夜3時の", "マヨネーズ味の", "狂気のエモい", "概念としての"];
     const nounParts = ["鼻クソ","ストライカー","ナポレオン","ギャラクティカ","優しい","キモイ","だらしない","うたげ","カラオケ大会","走りだす","ほとばしる","電光石火","ゲロ吐くぞ！","パンチかます！","髪切れを","スナップ", "虚無", "ツナマヨ", "パラドックス", "オーロラ", "大根", "マルチバース", "残像", "アバター", "パフェ"];
     const attackParts = ["未知へのパルプンテ","かめはめ波", "ビックバンアタック","抱きしめろ","クソガキが！","バナナでも食べてろ！","韓国へ","チョコよこせ！","そして歩き出せ","一歩ずつ","奏でろ","ただただやかましい","ぶち上げろ","唐突なマントル", "全方位お昼寝", "無限エントロピー", "意味不明の突撃", "エモさの過剰摂取", "真夜中の冷蔵庫漁り"];
