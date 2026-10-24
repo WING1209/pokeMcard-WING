@@ -158,7 +158,6 @@
             transition: all 0.4s ease-out !important;
         }
 
-        /* 3Dカード・ズーム対応コンテナ */
         .card-view-container {
             perspective: 1400px;
             width: 270px;
@@ -302,7 +301,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.6</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver2.9</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -511,10 +510,44 @@
     let isViewingDexCard = false;
     let hasHighRarityInBatch = false;
 
+    // ローカルストレージからの読み込み（画像URLを保持して確実に復元）
     try {
-        collectionDex = JSON.parse(localStorage.getItem('pocket_mon_dex') || '[]');
+        const savedDex = localStorage.getItem('pocket_mon_dex');
+        if (savedDex) {
+            const rawData = JSON.parse(savedDex);
+            collectionDex = rawData.map(item => {
+                const img = new Image();
+                img.src = item.imageSrc;
+                return {
+                    ...item,
+                    image: img
+                };
+            });
+        }
     } catch(e) {
         collectionDex = [];
+    }
+
+    function saveDexToStorage() {
+        try {
+            const serializable = collectionDex.map(card => {
+                let src = "";
+                if (card.image && card.image.src) {
+                    src = card.image.src;
+                }
+                return {
+                    name: card.name,
+                    rarity: card.rarity,
+                    hp: card.hp,
+                    type: card.type,
+                    moveName: card.moveName,
+                    moveDesc: card.moveDesc,
+                    damage: card.damage,
+                    imageSrc: src
+                };
+            });
+            localStorage.setItem('pocket_mon_dex', JSON.stringify(serializable));
+        } catch(e) {}
     }
 
     function showScreen(screenId) {
@@ -538,6 +571,7 @@
         showScreen('packSelectScreen'); 
     }
 
+    // 各ボタンの確実なバインド
     document.getElementById('menuPackBtn').onclick = () => { playSE('select'); startPackSelect(); };
     document.getElementById('menuDexBtn').onclick = () => { playSE('select'); openDex(); };
     document.getElementById('menuTitleBtn').onclick = () => { playSE('select'); goToTitle(); };
@@ -725,7 +759,7 @@
                 collectionDex.push(card);
             }
         }
-        localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
+        saveDexToStorage();
     }
 
     function renderCardBackCanvas() {
@@ -780,21 +814,24 @@
 
     function displayCurrentCard() {
         const card = openedBatchCards[currentCardIndex];
-        document.getElementById('rarityHeader').innerText = `${card.rarity} (${currentCardIndex + 1} / 5)`;
+        if (!card) return;
+        document.getElementById('rarityHeader').innerText = isViewingDexCard ? `${card.rarity} (図鑑鑑賞)` : `${card.rarity} (${currentCardIndex + 1} / 5)`;
 
         renderCardCanvas(card, 0, 0);
 
-        if (card.rarity === "UR" || card.rarity === "★★★") {
-            triggerScreenFlash();
-            if (card.rarity === "UR") {
-                playSE('ur_rare');
-                triggerSuperFireworks('ur');
+        if (!isViewingDexCard) {
+            if (card.rarity === "UR" || card.rarity === "★★★") {
+                triggerScreenFlash();
+                if (card.rarity === "UR") {
+                    playSE('ur_rare');
+                    triggerSuperFireworks('ur');
+                } else {
+                    playSE('firework');
+                    triggerSuperFireworks('gold');
+                }
             } else {
-                playSE('firework');
-                triggerSuperFireworks('gold');
+                playSE('jakin');
             }
-        } else {
-            playSE('jakin');
         }
     }
 
@@ -912,12 +949,17 @@
 
         if (!targetCanvas) {
             const nextBtn = document.getElementById('nextCardBtn');
-            if (!isViewingDexCard && currentCardIndex === openedBatchCards.length - 1) {
-                nextBtn.innerText = "メニューへ";
-            } else if (isViewingDexCard) {
+            const prevBtn = document.getElementById('prevCardBtn');
+            if (isViewingDexCard) {
                 nextBtn.innerText = "図鑑へ戻る";
+                prevBtn.style.display = 'none';
             } else {
-                nextBtn.innerText = "次へ ▶";
+                prevBtn.style.display = 'block';
+                if (currentCardIndex === openedBatchCards.length - 1) {
+                    nextBtn.innerText = "メニューへ";
+                } else {
+                    nextBtn.innerText = "次へ ▶";
+                }
             }
         }
     }
@@ -940,10 +982,7 @@
 
     function prevCard() {
         playSE('select');
-        if (isViewingDexCard) {
-            openDex();
-            return;
-        }
+        if (isViewingDexCard) return;
 
         if (currentCardIndex > 0) {
             currentCardIndex--;
@@ -953,7 +992,7 @@
     }
 
     // ==========================================
-    // 360度回転 ＆ ピンチズゾン・ダブルタップ拡大システム
+    // 360度回転 ＆ ピンチズーム・ダブルタップ拡大システム
     // ==========================================
     const cardObj = document.getElementById('card3dObject');
     const container = document.getElementById('cardContainer');
@@ -994,13 +1033,13 @@
                 hasMoved = true;
             }
 
-            // 360度自在にグリグリ回転
             currentRotY = startRotY + (deltaX * 0.6);
             currentRotX = startRotX - (deltaY * 0.6);
             updateCardTransform();
 
-            if (openedBatchCards[currentCardIndex]) {
-                renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
+            const targetCard = isViewingDexCard ? openedBatchCards[0] : openedBatchCards[currentCardIndex];
+            if (targetCard) {
+                renderCardCanvas(targetCard, currentRotX, currentRotY);
             }
         } else if (e.touches.length === 2) {
             let currentPinchDistance = Math.hypot(
@@ -1020,7 +1059,6 @@
         if (isDragging) {
             isDragging = false;
             if (!hasMoved) {
-                // タップで裏返る
                 isFlipped = !isFlipped;
                 playSE('appear');
                 updateCardTransform();
@@ -1028,7 +1066,6 @@
         }
     });
 
-    // ダブルタップでズーム切り替え
     let lastTapTime = 0;
     container.addEventListener('click', () => {
         let now = new Date().getTime();
@@ -1049,8 +1086,9 @@
         currentScale = 1.0;
         container.style.transform = `scale(1.0)`;
         updateCardTransform();
-        if (openedBatchCards[currentCardIndex]) {
-            renderCardCanvas(openedBatchCards[currentCardIndex], 0, 0);
+        const targetCard = isViewingDexCard ? openedBatchCards[0] : openedBatchCards[currentCardIndex];
+        if (targetCard) {
+            renderCardCanvas(targetCard, 0, 0);
         }
     }
 
@@ -1060,10 +1098,9 @@
     }
 
     // ==========================================
-    // 獲得カード図鑑 (一覧表示＆360度個別鑑賞)
+    // 獲得カード図鑑 (一覧表示＆360度個別鑑賞) の完全な実装
     // ==========================================
     function openDex() {
-        isViewingDexCard = true;
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         grid.innerHTML = '';
@@ -1082,7 +1119,7 @@
             renderCardCanvas(card, 0, 0, thumbCanvas);
             item.appendChild(thumbCanvas);
             
-            // 一覧からタップされたカードを1枚表示し、360度鑑賞モードへ
+            // 図鑑のカードをタップすると1枚表示になり、360度鑑賞モードへ直行
             item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
