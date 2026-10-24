@@ -43,20 +43,21 @@
         h1 {
             font-size: 2rem;
             color: #f1c40f;
-            text-shadow: 0 0 10px #e74c3c, 0 0 20px #f1c40f;
+            text-shadow: 0 0 15px #e74c3c, 0 0 30px #f1c40f;
             margin: 0 0 10px 0;
         }
         .blink-start {
             font-size: 1.1rem;
             color: #00ffff;
-            animation: blink 1s infinite;
+            animation: blink 0.8s infinite;
             margin-top: 30px;
             font-weight: bold;
             display: inline-block;
             padding: 15px 30px;
-            background: rgba(0, 255, 255, 0.1);
+            background: rgba(0, 255, 255, 0.15);
             border-radius: 30px;
             border: 2px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
@@ -71,7 +72,7 @@
             margin: 10px 0;
             width: 85%;
             max-width: 280px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(231,76,60,0.6);
         }
 
         .pack-container {
@@ -95,15 +96,16 @@
         .pack-item.selected {
             transform: scale(1.08);
             border-color: #f1c40f;
+            box-shadow: 0 0 20px #f1c40f;
         }
 
         .folder-status {
             font-size: 0.8rem;
             color: #f39c12;
-            background: rgba(243, 156, 18, 0.1);
+            background: rgba(243, 156, 18, 0.15);
             padding: 8px 12px;
             border-radius: 6px;
-            border: 1px solid rgba(243, 156, 18, 0.3);
+            border: 1px solid rgba(243, 156, 18, 0.4);
             margin: 10px 0;
             text-align: center;
             max-width: 300px;
@@ -127,7 +129,7 @@
             font-size: 1.1rem;
             font-weight: bold;
             text-align: center;
-            box-shadow: 0 0 20px #f1c40f;
+            box-shadow: 0 0 25px #f1c40f;
             will-change: transform;
         }
         
@@ -135,8 +137,8 @@
             background: linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
             background-size: 400% 400%;
             border-color: #ffffff;
-            box-shadow: 0 0 40px #ffff00, 0 0 80px #00ffff;
-            animation: rainbowFlow 2s ease infinite;
+            box-shadow: 0 0 50px #ffff00, 0 0 100px #00ffff;
+            animation: rainbowFlow 1.5s ease infinite;
         }
         @keyframes rainbowFlow {
             0% { background-position: 0% 50%; }
@@ -174,7 +176,7 @@
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
             border-radius: 12px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
         }
         .card-front { background: #111; }
         .card-front canvas {
@@ -202,34 +204,37 @@
             border-radius: 12px;
             background: linear-gradient(135deg, #f1c40f, #e74c3c, #9b59b6);
             transform: translateZ(-2px);
-            box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
         }
 
         .dex-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 10px;
             width: 100%;
-            max-width: 350px;
-            height: 64vh;
+            max-width: 360px;
+            height: 62vh;
             overflow-y: auto;
-            padding: 8px;
+            padding: 10px;
             background: rgba(255,255,255,0.05);
-            border-radius: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .dex-item {
             background: #222;
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
-            border: 2px solid #444;
+            border: 2px solid #f39c12;
             aspect-ratio: 270/410;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .dex-item img {
+        .dex-item canvas {
             width: 100%;
             height: 100%;
+            display: block;
             object-fit: cover;
         }
 
@@ -247,6 +252,7 @@
             font-weight: bold;
             font-size: 0.9rem;
             flex: 1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .btn-sub { background: #34495e; color: #fff; }
         .btn-main { background: #e67e22; color: #fff; }
@@ -268,13 +274,12 @@
             opacity: 0;
             pointer-events: none;
             z-index: 9998;
-            transition: opacity 0.15s ease-out;
+            transition: opacity 0.12s ease-out;
         }
     </style>
 </head>
 <body>
 
-    <!-- 安全なHTMLオーディオ要素 -->
     <audio id="bgmAudio" src="title_bgm.mp3" preload="auto" loop></audio>
 
     <canvas id="particleCanvas"></canvas>
@@ -285,7 +290,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.5</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.1</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -342,8 +347,8 @@
     <!-- 5. 獲得カード閲覧画面 -->
     <div id="cardResultScreen" class="screen">
         <div>
-            <div id="rarityHeader" style="font-size:1.2rem; font-weight:bold; color:#f1c40f; text-align:center;">★</div>
-            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 左右ボタン / スワイプ: 切替 / 👆 タップで裏返る</p>
+            <div id="rarityHeader" style="font-size:1.3rem; font-weight:bold; color:#f1c40f; text-align:center; text-shadow: 0 0 10px #f1c40f;">★</div>
+            <p style="font-size:0.75rem; color:#aaa; margin:2px 0 2px 0; text-align:center;">◀▶ 「次へ」で進む / 👆 タップで裏返る / スワイプ回転</p>
         </div>
         
         <div class="card-view-container" id="cardContainer">
@@ -376,25 +381,19 @@
 
 <script>
     // ==========================================
-    // オーディオ（HTML Audioタグを使用）
+    // 音声制御
     // ==========================================
     const bgm = document.getElementById('bgmAudio');
     bgm.volume = 0.4;
 
     const titleScreenEl = document.getElementById('titleScreen');
     
-    // タイトル画面タップ時の処理（確実にBGMを鳴らしてメニューへ）
     function handleTitleInteraction(e) {
         if (e) e.stopPropagation();
-        
-        bgm.play().catch(err => {
-            console.log("Audio play blocked or missing:", err);
-        });
-        
+        bgm.play().catch(() => {});
         goToMenu();
     }
 
-    // Android/iOSの両方で確実に反応するよう複数のイベントリスナーを設置
     titleScreenEl.addEventListener('touchend', handleTitleInteraction, { passive: true });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
@@ -410,48 +409,61 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') ctx.resume();
             const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
 
             if (type === 'jakin') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(2400, now + 0.15);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-            } else if (type === 'firework') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.exponentialRampToValueAtTime(25, now + 0.8);
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(3200, now + 0.18);
                 gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-            } else if (type === 'ur_rare') {
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'firework') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(554.37, now + 0.12);
-                osc.frequency.setValueAtTime(659.25, now + 0.24);
-                osc.frequency.setValueAtTime(880, now + 0.36);
-                osc.frequency.setValueAtTime(1108.73, now + 0.5);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.9);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + 0.9);
+            } else if (type === 'ur_rare') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.6);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.6);
+                });
             } else if (type === 'rip') {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(250, now);
-                osc.frequency.linearRampToValueAtTime(1400, now + 0.15);
-                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(1800, now + 0.15);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.35);
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + 0.4);
             } else {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(700, now);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + 0.08);
             }
-
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(now); 
-            osc.stop(now + (type === 'ur_rare' ? 1.2 : (type === 'firework' ? 0.8 : (type === 'rip' ? 0.35 : (type === 'jakin' ? 0.25 : 0.05)))));
         } catch(e) {}
     }
 
@@ -515,7 +527,6 @@
         showScreen('packSelectScreen'); 
     }
 
-    // ボタンのイベント割り当て
     document.getElementById('menuPackBtn').addEventListener('touchend', () => { playSE('select'); startPackSelect(); });
     document.getElementById('menuPackBtn').addEventListener('click', () => { playSE('select'); startPackSelect(); });
 
@@ -537,620 +548,4 @@
     document.getElementById('selectFolderBtn').addEventListener('touchend', () => { playSE('select'); triggerFolderSelect(); });
     document.getElementById('selectFolderBtn').addEventListener('click', () => { playSE('select'); triggerFolderSelect(); });
 
-    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('select'); tryOpenPack(); });
-    document.getElementById('openPackBtn').addEventListener('click', () => { playSE('select'); tryOpenPack(); });
-
-    document.getElementById('nextCardBtn').addEventListener('touchend', () => { nextCard(); });
-    document.getElementById('nextCardBtn').addEventListener('click', () => { nextCard(); });
-
-    document.getElementById('prevCardBtn').addEventListener('touchend', () => { prevCard(); });
-    document.getElementById('prevCardBtn').addEventListener('click', () => { prevCard(); });
-
-    document.getElementById('packBlue').addEventListener('touchend', () => { playSE('select'); selectPack(1); });
-    document.getElementById('packBlue').addEventListener('click', () => { playSE('select'); selectPack(1); });
-    document.getElementById('packRed').addEventListener('touchend', () => { playSE('select'); selectPack(0); });
-    document.getElementById('packRed').addEventListener('click', () => { playSE('select'); selectPack(0); });
-    document.getElementById('packGreen').addEventListener('touchend', () => { playSE('select'); selectPack(2); });
-    document.getElementById('packGreen').addEventListener('click', () => { playSE('select'); selectPack(2); });
-
-    function selectPack(type) {
-        currentPackType = type;
-        ['packRed', 'packBlue', 'packGreen'].forEach((id, idx) => {
-            const el = document.getElementById(id);
-            if(idx === type) el.classList.add('selected');
-            else el.classList.remove('selected');
-        });
-        const names = ["赤パック (炎)", "青パック (水)", "緑パック (草)"];
-        document.getElementById('packNameLabel').innerText = names[type];
-    }
-
-    function triggerFolderSelect() {
-        document.getElementById('folderInput').click();
-    }
-
-    document.getElementById('folderInput').addEventListener('change', function(e) {
-        let files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
-        const statusText = document.getElementById('folderStatusText');
-        if (files.length === 0) return;
-
-        if (files.length > 200) {
-            files.sort(() => Math.random() - 0.5);
-            files = files.slice(0, 200);
-            statusText.innerText = `📁 全 ${files.length}枚以上からランダムに200枚を選出中...`;
-        } else {
-            statusText.innerText = `📁 全 ${files.length}枚を読み込み中...`;
-        }
-        
-        loadedImageObjects = [];
-        let loadedCount = 0;
-        const totalToLoad = files.length;
-
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    loadedImageObjects.push(img);
-                    loadedCount++;
-                    statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
-                    
-                    const openBtn = document.getElementById('openPackBtn');
-                    openBtn.disabled = false;
-                    openBtn.style.opacity = '1';
-                };
-                img.onerror = function() { loadedCount++; };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-
-    function getFallbackImage() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 540; canvas.height = 820;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(0, 0, 540, 820);
-        ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.fillText("Pocket Card", 170, 410);
-        const img = new Image();
-        img.src = canvas.toDataURL();
-        return img;
-    }
-
-    function tryOpenPack() {
-        if (loadedImageObjects.length === 0) {
-            loadedImageObjects.push(getFallbackImage());
-        }
-        generateBatchCards();
-
-        const packObj = document.getElementById('ripPackObj');
-        const packLabel = document.getElementById('packLabelText');
-        
-        if (hasHighRarityInBatch) {
-            packObj.classList.add('rainbow-pack');
-            packLabel.innerHTML = "✨ 激レア封入！<br>スワイプで開封！！";
-        } else {
-            packObj.classList.remove('rainbow-pack');
-            packLabel.innerHTML = "スワイプ or タップで<br>開封！！";
-        }
-
-        showScreen('openingScreen');
-    }
-
-    const packObj = document.getElementById('ripPackObj');
-    let packStartX = 0, packStartY = 0;
-    let isPackDragging = false;
-
-    packObj.addEventListener('touchstart', (e) => {
-        isPackDragging = true;
-        packStartX = e.touches[0].clientX;
-        packStartY = e.touches[0].clientY;
-    });
-
-    window.addEventListener('touchmove', (e) => {
-        if (!isPackDragging) return;
-        let dx = e.touches[0].clientX - packStartX;
-        let dy = e.touches[0].clientY - packStartY;
-        packObj.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.1}deg)`;
-    });
-
-    window.addEventListener('touchend', (e) => {
-        if (!isPackDragging) return;
-        isPackDragging = false;
-        let dx = e.changedTouches[0].clientX - packStartX;
-        let dy = e.changedTouches[0].clientY - packStartY;
-        let distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > 40 || distance < 10) {
-            executeRip();
-        } else {
-            packObj.style.transform = 'translate(0px, 0px) rotate(0deg)';
-        }
-    });
-
-    function executeRip() {
-        playSE('rip');
-        packObj.classList.add('ripping');
-
-        setTimeout(() => {
-            packObj.classList.remove('ripping');
-            packObj.style.transform = 'translate(0px, 0px) rotate(0deg)';
-            stopTitleBGM(); 
-            currentCardIndex = 0;
-            isViewingDexCard = false;
-            document.getElementById('resultActionBar').style.display = 'flex';
-            showScreen('cardResultScreen');
-            displayCurrentCard();
-        }, 400);
-    }
-
-    function generateBatchCards() {
-        openedBatchCards = [];
-        hasHighRarityInBatch = false;
-
-        for (let i = 0; i < 5; i++) {
-            const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)];
-            const rRand = Math.random();
-            let rarity = "★";
-            if (rRand > 0.90) {
-                rarity = "UR";
-                hasHighRarityInBatch = true;
-            } else if (rRand > 0.70) {
-                rarity = "★★★";
-                hasHighRarityInBatch = true;
-            } else if (rRand > 0.40) {
-                rarity = "★★";
-            }
-
-            const cardName = getRandomItem(adjParts) + " " + getRandomItem(nounParts);
-            const moveName = getRandomItem(attackParts);
-            const flavorText = getRandomItem(chaoticFlavors);
-
-            const card = {
-                image: randImg,
-                rarity: rarity,
-                name: cardName,
-                hp: Math.floor(Math.random() * 800 + 100),
-                type: currentPackType === 0 ? "炎" : (currentPackType === 1 ? "水" : "草"),
-                moveName: moveName,
-                moveDesc: flavorText,
-                damage: Math.floor(Math.random() * 300 + 50)
-            };
-            openedBatchCards.push(card);
-
-            if (!collectionDex.some(c => c.name === card.name)) {
-                collectionDex.push(card);
-            }
-        }
-        localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
-    }
-
-    function renderCardBackCanvas() {
-        const canvas = document.getElementById('backCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        grad.addColorStop(0, '#1a0033');
-        grad.addColorStop(0.3, '#330066');
-        grad.addColorStop(0.6, '#003366');
-        grad.addColorStop(1, '#001a1a');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.strokeStyle = '#f1c40f';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
-
-        ctx.strokeStyle = '#00ffff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
-
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-
-        const circleGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 150);
-        circleGrad.addColorStop(0, '#e74c3c');
-        circleGrad.addColorStop(0.5, '#9b59b6');
-        circleGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = circleGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 150, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 36px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 15;
-        ctx.fillText("★ POCKET ★", 0, -10);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px sans-serif';
-        ctx.shadowBlur = 0;
-        ctx.fillText("MONSTER CARD", 0, 35);
-
-        ctx.restore();
-    }
-    renderCardBackCanvas();
-
-    function displayCurrentCard() {
-        const card = openedBatchCards[currentCardIndex];
-        document.getElementById('rarityHeader').innerText = card.rarity;
-        document.getElementById('cardBackFlavor').innerText = `${card.name}\n\n【ワザ】${card.moveName}\nダメージ: ${card.damage}\n\n${card.moveDesc}`;
-
-        renderCardCanvas(card, 0, 0);
-
-        if (card.rarity === "UR" || card.rarity === "★★★") {
-            triggerScreenFlash();
-            if (card.rarity === "UR") {
-                playSE('ur_rare');
-                triggerSuperFireworks('ur');
-            } else {
-                playSE('firework');
-                triggerSuperFireworks('gold');
-            }
-        } else {
-            playSE('jakin');
-        }
-    }
-
-    function triggerScreenFlash() {
-        const overlay = document.getElementById('flashOverlay');
-        overlay.style.opacity = '1';
-        setTimeout(() => { overlay.style.opacity = '0'; }, 180);
-    }
-
-    function renderCardCanvas(card, rotX = 0, rotY = 0) {
-        const canvas = document.getElementById('resultCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (card.rarity === "UR") {
-            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradFrame.addColorStop(0, '#ff007f');
-            gradFrame.addColorStop(0.3, '#7f00ff');
-            gradFrame.addColorStop(0.7, '#00ffff');
-            gradFrame.addColorStop(1, '#ffff00');
-            ctx.fillStyle = gradFrame;
-        } else if (card.rarity === "★★★") {
-            const gradFrame = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradFrame.addColorStop(0, '#f1c40f');
-            gradFrame.addColorStop(0.5, '#e74c3c');
-            gradFrame.addColorStop(1, '#9b59b6');
-            ctx.fillStyle = gradFrame;
-        } else {
-            ctx.fillStyle = '#f39c12';
-        }
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(8, 8, canvas.width - 16, canvas.height - 16);
-
-        ctx.fillStyle = '#fdfefe';
-        ctx.fillRect(22, 22, canvas.width - 44, canvas.height - 44);
-
-        ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 28px sans-serif';
-        if(card.name.length > 10) ctx.font = 'bold 22px sans-serif';
-        ctx.fillText(card.name, 40, 62);
-
-        ctx.fillStyle = '#c0392b';
-        ctx.font = 'bold 25px sans-serif';
-        ctx.fillText(`HP ${card.hp}`, canvas.width - 150, 62);
-
-        ctx.fillStyle = card.type === '炎' ? '#e74c3c' : (card.type === '水' ? '#3498db' : '#2ecc71');
-        ctx.beginPath();
-        ctx.arc(canvas.width - 60, 54, 18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(card.type, canvas.width - 60, 60);
-        ctx.textAlign = 'left';
-
-        ctx.strokeStyle = '#d35400';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(40, 85, canvas.width - 80, 430);
-
-        if (card.image) {
-            ctx.drawImage(card.image, 42, 87, canvas.width - 84, 426);
-        }
-
-        if (card.rarity === "★★★" || card.rarity === "UR") {
-            ctx.save();
-            ctx.globalCompositeOperation = 'overlay';
-            let lightX = (canvas.width / 2) + (rotY * 25);
-            let lightY = (canvas.height / 2) + (rotX * 25);
-
-            const holoGrad = ctx.createRadialGradient(lightX, lightY, 10, lightX, lightY, 350);
-            holoGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-            holoGrad.addColorStop(0.2, 'rgba(255, 0, 128, 0.6)');
-            holoGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.6)');
-            holoGrad.addColorStop(0.7, 'rgba(255, 255, 0, 0.6)');
-            holoGrad.addColorStop(1, 'transparent');
-
-            ctx.fillStyle = holoGrad;
-            ctx.fillRect(40, 85, canvas.width - 80, 430);
-            ctx.restore();
-        }
-
-        ctx.fillStyle = '#fef9e7';
-        ctx.fillRect(40, 535, canvas.width - 80, 175);
-        ctx.strokeStyle = '#f5b041';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(40, 535, canvas.width - 80, 175);
-
-        ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.fillText(card.moveName, 55, 575);
-
-        ctx.fillStyle = '#c0392b';
-        ctx.font = 'bold 27px sans-serif';
-        ctx.fillText(card.damage, canvas.width - 125, 575);
-
-        ctx.fillStyle = '#566573';
-        ctx.font = '16px sans-serif';
-        let words = card.moveDesc;
-        let line = "";
-        let lineY = 610;
-        for(let i = 0; i < words.length; i++) {
-            line += words[i];
-            if(line.length >= 19 || i === words.length - 1) {
-                ctx.fillText(line, 55, lineY);
-                line = "";
-                lineY += 24;
-            }
-        }
-
-        ctx.fillStyle = '#7f8c8d';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`レア度: ${card.rarity}  |  カオス度: MAX  |  弱点: 概念`, 50, 745);
-
-        const nextBtn = document.getElementById('nextCardBtn');
-        if (!isViewingDexCard && currentCardIndex === openedBatchCards.length - 1) {
-            nextBtn.innerText = "メニューへ";
-        } else if (isViewingDexCard) {
-            nextBtn.innerText = "図鑑へ戻る";
-        } else {
-            nextBtn.innerText = "次へ ▶";
-        }
-    }
-
-    function nextCard() {
-        playSE('select');
-        if (isViewingDexCard) {
-            openDex();
-            return;
-        }
-
-        if (currentCardIndex < openedBatchCards.length - 1) {
-            currentCardIndex++;
-            displayCurrentCard();
-            resetCardFlip();
-        } else {
-            goToMenu();
-        }
-    }
-
-    function prevCard() {
-        playSE('select');
-        if (isViewingDexCard) {
-            openDex();
-            return;
-        }
-
-        if (currentCardIndex > 0) {
-            currentCardIndex--;
-            displayCurrentCard();
-            resetCardFlip();
-        }
-    }
-
-    const cardObj = document.getElementById('card3dObject');
-    const container = document.getElementById('cardContainer');
-    let isFlipped = false;
-    
-    let currentRotX = 0, currentRotY = 0;
-    let startRotX = 0, startRotY = 0;
-    let startX = 0, startY = 0;
-    let isDragging = false;
-    let hasMoved = false;
-
-    container.addEventListener('touchstart', (e) => {
-        isDragging = true;
-        hasMoved = false;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        startRotX = currentRotX;
-        startRotY = currentRotY;
-    });
-
-    window.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
-        let deltaX = e.touches[0].clientX - startX;
-        let deltaY = e.touches[0].clientY - startY;
-
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-            hasMoved = true;
-        }
-
-        currentRotY = startRotY + (deltaX * 0.4);
-        currentRotX = startRotX - (deltaY * 0.4);
-        updateCardTransform();
-
-        if (openedBatchCards[currentCardIndex]) {
-            renderCardCanvas(openedBatchCards[currentCardIndex], currentRotX, currentRotY);
-        }
-    });
-
-    window.addEventListener('touchend', () => {
-        if (!isDragging) return;
-        isDragging = false;
-
-        if (!hasMoved) {
-            isFlipped = !isFlipped;
-            playSE('appear');
-            updateCardTransform();
-        }
-    });
-
-    function resetCardFlip() {
-        isFlipped = false;
-        currentRotX = 0;
-        currentRotY = 0;
-        startRotX = 0;
-        startRotY = 0;
-        updateCardTransform();
-        if (openedBatchCards[currentCardIndex]) {
-            renderCardCanvas(openedBatchCards[currentCardIndex], 0, 0);
-        }
-    }
-
-    function updateCardTransform() {
-        let flipDeg = isFlipped ? 180 : 0;
-        cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
-    }
-
-    function openDex() {
-        isViewingDexCard = false;
-        showScreen('dexScreen');
-        const grid = document.getElementById('dexGrid');
-        grid.innerHTML = '';
-
-        if (collectionDex.length === 0) {
-            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
-            return;
-        }
-
-        collectionDex.forEach((card) => {
-            const item = document.createElement('div');
-            item.className = 'dex-item';
-            
-            const img = document.createElement('img');
-            const tmpCanvas = document.createElement('canvas');
-            tmpCanvas.width = 150; tmpCanvas.height = 230;
-            const tCtx = tmpCanvas.getContext('2d');
-            tCtx.drawImage(card.image, 0, 0, 150, 230);
-            img.src = tmpCanvas.toDataURL();
-
-            item.appendChild(img);
-            
-            const openCardDetail = () => {
-                playSE('select');
-                isViewingDexCard = true;
-                openedBatchCards = [card]; 
-                currentCardIndex = 0;
-                document.getElementById('resultActionBar').style.display = 'flex';
-                showScreen('cardResultScreen');
-                displayCurrentCard();
-                resetCardFlip();
-            };
-
-            item.addEventListener('touchend', openCardDetail);
-            item.addEventListener('click', openCardDetail);
-
-            grid.appendChild(item);
-        });
-    }
-
-    // ==========================================
-    // パーティクル＆花火システム
-    // ==========================================
-    const pCanvas = document.getElementById('particleCanvas');
-    const pCtx = pCanvas.getContext('2d');
-    pCanvas.width = window.innerWidth;
-    pCanvas.height = window.innerHeight;
-
-    let activeFireworks = [];
-
-    function triggerSuperFireworks(type) {
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        const count = type === 'ur' ? 140 : 80;
-        const bursts = type === 'ur' ? 3 : 1;
-
-        for (let b = 0; b < bursts; b++) {
-            let bx = cx + (Math.random() * 200 - 100);
-            let by = cy + (Math.random() * 200 - 100);
-
-            for (let i = 0; i < count / bursts; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 9 + 3;
-                let color = '#f1c40f';
-                if (type === 'ur') {
-                    const colors = ['#ff007f', '#00ffff', '#ffff00', '#7f00ff', '#ff4500', '#ffffff'];
-                    color = colors[Math.floor(Math.random() * colors.length)];
-                }
-                activeFireworks.push({
-                    x: bx,
-                    y: by,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: Math.random() * 5 + 2,
-                    color: color,
-                    alpha: 1.0,
-                    decay: Math.random() * 0.012 + 0.008
-                });
-            }
-        }
-    }
-
-    let ambientParticles = [];
-    for(let i=0; i<45; i++) {
-        ambientParticles.push({
-            x: Math.random() * pCanvas.width,
-            y: Math.random() * pCanvas.height,
-            size: Math.random() * 2 + 1.2,
-            speed: Math.random() * 0.6 + 0.3
-        });
-    }
-
-    function animateParticles() {
-        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-
-        pCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        ambientParticles.forEach(p => {
-            p.y -= p.speed;
-            if (p.y < 0) p.y = pCanvas.height;
-            pCtx.beginPath();
-            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            pCtx.fill();
-        });
-
-        if (activeFireworks.length > 0) {
-            activeFireworks.forEach((fp, index) => {
-                fp.x += fp.vx;
-                fp.y += fp.vy;
-                fp.vy += 0.04; 
-                fp.alpha -= fp.decay;
-
-                if (fp.alpha <= 0) {
-                    activeFireworks.splice(index, 1);
-                    return;
-                }
-
-                pCtx.save();
-                pCtx.globalAlpha = fp.alpha;
-                pCtx.fillStyle = fp.color;
-                pCtx.beginPath();
-                pCtx.arc(fp.x, fp.y, fp.size, 0, Math.PI * 2);
-                pCtx.fill();
-                pCtx.restore();
-            });
-        }
-
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-    window.addEventListener('resize', () => {
-        pCanvas.width = window.innerWidth;
-        pCanvas.height = window.innerHeight;
-    });
-</script>
-</body>
-</html>
+    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('
