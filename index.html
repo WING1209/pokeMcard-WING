@@ -35,7 +35,6 @@
             display: flex;
         }
 
-        /* タイトル画面のタッチ判定と透過を完全に最適化 */
         #titleScreen {
             justify-content: center;
             text-align: center;
@@ -234,6 +233,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
         }
         .dex-item canvas {
             width: 100%;
@@ -258,13 +258,13 @@
             flex: 1;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
             z-index: 5;
+            cursor: pointer;
         }
         .btn-sub { background: #34495e; color: #fff; }
         .btn-main { background: #e67e22; color: #fff; }
         
         #folderInput { display: none; }
         
-        /* パーティクル用Canvas（背景に美しく舞い散る） */
         #particleCanvas {
             position: fixed;
             top: 0; left: 0;
@@ -296,7 +296,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.2</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.6</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -400,7 +400,6 @@
         goToMenu();
     }
 
-    titleScreenEl.addEventListener('touchend', handleTitleInteraction, { passive: true });
     titleScreenEl.addEventListener('click', handleTitleInteraction);
 
     function stopTitleBGM() {
@@ -533,42 +532,23 @@
         showScreen('packSelectScreen'); 
     }
 
-    document.getElementById('menuPackBtn').addEventListener('touchend', () => { playSE('select'); startPackSelect(); });
-    document.getElementById('menuPackBtn').addEventListener('click', () => { playSE('select'); startPackSelect(); });
+    // ボタンの多重発火を防ぐ安全なイベント登録（クリックのみで確実かつ1回だけ動作）
+    document.getElementById('menuPackBtn').onclick = () => { playSE('select'); startPackSelect(); };
+    document.getElementById('menuDexBtn').onclick = () => { playSE('select'); openDex(); };
+    document.getElementById('menuTitleBtn').onclick = () => { playSE('select'); goToTitle(); };
+    document.getElementById('packBackBtn').onclick = () => { playSE('select'); goToMenu(); };
+    document.getElementById('resultMenuBtn').onclick = () => { playSE('select'); goToMenu(); };
+    document.getElementById('dexBackBtn').onclick = () => { playSE('select'); goToMenu(); };
+    document.getElementById('selectFolderBtn').onclick = () => { playSE('select'); triggerFolderSelect(); };
+    document.getElementById('openPackBtn').onclick = () => { playSE('select'); tryOpenPack(); };
 
-    document.getElementById('menuDexBtn').addEventListener('touchend', () => { playSE('select'); openDex(); });
-    document.getElementById('menuDexBtn').addEventListener('click', () => { playSE('select'); openDex(); });
+    // 次へ・前へボタン（二重発火を完全に排除）
+    document.getElementById('nextCardBtn').onclick = () => { nextCard(); };
+    document.getElementById('prevCardBtn').onclick = () => { prevCard(); };
 
-    document.getElementById('menuTitleBtn').addEventListener('touchend', () => { playSE('select'); goToTitle(); });
-    document.getElementById('menuTitleBtn').addEventListener('click', () => { playSE('select'); goToTitle(); });
-
-    document.getElementById('packBackBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
-    document.getElementById('packBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
-
-    document.getElementById('resultMenuBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
-    document.getElementById('resultMenuBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
-
-    document.getElementById('dexBackBtn').addEventListener('touchend', () => { playSE('select'); goToMenu(); });
-    document.getElementById('dexBackBtn').addEventListener('click', () => { playSE('select'); goToMenu(); });
-
-    document.getElementById('selectFolderBtn').addEventListener('touchend', () => { playSE('select'); triggerFolderSelect(); });
-    document.getElementById('selectFolderBtn').addEventListener('click', () => { playSE('select'); triggerFolderSelect(); });
-
-    document.getElementById('openPackBtn').addEventListener('touchend', () => { playSE('select'); tryOpenPack(); });
-    document.getElementById('openPackBtn').addEventListener('click', () => { playSE('select'); tryOpenPack(); });
-
-    document.getElementById('nextCardBtn').addEventListener('touchend', () => { nextCard(); });
-    document.getElementById('nextCardBtn').addEventListener('click', () => { nextCard(); });
-
-    document.getElementById('prevCardBtn').addEventListener('touchend', () => { prevCard(); });
-    document.getElementById('prevCardBtn').addEventListener('click', () => { prevCard(); });
-
-    document.getElementById('packBlue').addEventListener('touchend', () => { playSE('select'); selectPack(1); });
-    document.getElementById('packBlue').addEventListener('click', () => { playSE('select'); selectPack(1); });
-    document.getElementById('packRed').addEventListener('touchend', () => { playSE('select'); selectPack(0); });
-    document.getElementById('packRed').addEventListener('click', () => { playSE('select'); selectPack(0); });
-    document.getElementById('packGreen').addEventListener('touchend', () => { playSE('select'); selectPack(2); });
-    document.getElementById('packGreen').addEventListener('click', () => { playSE('select'); selectPack(2); });
+    document.getElementById('packBlue').onclick = () => { playSE('select'); selectPack(1); };
+    document.getElementById('packRed').onclick = () => { playSE('select'); selectPack(0); };
+    document.getElementById('packGreen').onclick = () => { playSE('select'); selectPack(2); };
 
     function selectPack(type) {
         currentPackType = type;
@@ -1033,6 +1013,9 @@
         cardObj.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY + flipDeg}deg)`;
     }
 
+    // ==========================================
+    // 図鑑一覧 & 個別鑑賞の完全修復版
+    // ==========================================
     function openDex() {
         isViewingDexCard = false;
         showScreen('dexScreen');
@@ -1053,7 +1036,7 @@
             renderCardCanvas(card, 0, 0, thumbCanvas);
             item.appendChild(thumbCanvas);
             
-            const openCardDetail = () => {
+            item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
                 openedBatchCards = [card]; 
@@ -1064,15 +1047,12 @@
                 resetCardFlip();
             };
 
-            item.addEventListener('touchend', openCardDetail);
-            item.addEventListener('click', openCardDetail);
-
             grid.appendChild(item);
         });
     }
 
     // ==========================================
-    // パーティクル＆花火システム（常時稼働）
+    // パーティクル＆花火システム
     // ==========================================
     const pCanvas = document.getElementById('particleCanvas');
     const pCtx = pCanvas.getContext('2d');
@@ -1126,7 +1106,6 @@
     function animateParticles() {
         pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
 
-        // 背景の美しい舞い散るパーティクル
         pCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ambientParticles.forEach(p => {
             p.y -= p.speed;
@@ -1136,7 +1115,6 @@
             pCtx.fill();
         });
 
-        // 爆発・花火パーティクル
         if (activeFireworks.length > 0) {
             activeFireworks.forEach((fp, index) => {
                 fp.x += fp.vx;
