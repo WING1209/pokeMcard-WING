@@ -214,14 +214,14 @@
             box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
         }
 
-        /* 図鑑グリッド */
+        /* 図鑑グリッドの安定化 */
         .dex-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             width: 100%;
             max-width: 360px;
-            height: 62vh;
+            max-height: 60vh;
             overflow-y: auto;
             padding: 10px;
             background: rgba(255,255,255,0.05);
@@ -229,22 +229,18 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
         .dex-item {
-            background: #222;
+            background: #111;
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid #f39c12;
-            aspect-ratio: 270/410;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             cursor: pointer;
         }
-        .dex-item canvas {
+        .dex-item img {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: block;
-            object-fit: cover;
         }
 
         .action-bar {
@@ -301,7 +297,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver6.5 (図鑑完全保証版)</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver6.7 (図鑑レイアウト完璧版)</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -510,7 +506,6 @@
     let isViewingDexCard = false;
     let hasHighRarityInBatch = false;
 
-    // 安全なフォールバック画像生成
     function getFallbackImage() {
         const canvas = document.createElement('canvas');
         canvas.width = 540; canvas.height = 820;
@@ -527,7 +522,6 @@
 
     const fallbackImg = getFallbackImage();
 
-    // 画像を軽量化（圧縮）してBase64にする関数（容量オーバー対策）
     function compressImage(img, callback) {
         try {
             const canvas = document.createElement('canvas');
@@ -550,29 +544,19 @@
         }
     }
 
-    // 起動時のデータ読み込み
     function loadDexFromStorage() {
         try {
             const savedDex = localStorage.getItem('pocket_mon_dex');
             if (savedDex) {
                 const rawData = JSON.parse(savedDex);
                 if (Array.isArray(rawData) && rawData.length > 0) {
-                    collectionDex = rawData.map(item => {
-                        const img = new Image();
-                        img.src = item.imageSrc || fallbackImg.src;
-                        return {
-                            ...item,
-                            image: img
-                        };
-                    });
+                    collectionDex = rawData;
                     return;
                 }
             }
         } catch(e) {}
         
-        // 万が一データが空の場合の初期テストカード
         collectionDex = [{
-            image: fallbackImg,
             rarity: "UR",
             name: "初期の 伝説ゴリラ",
             hp: 999,
@@ -587,19 +571,7 @@
 
     function saveDexToStorage() {
         try {
-            const serializable = collectionDex.map(card => {
-                return {
-                    name: card.name,
-                    rarity: card.rarity,
-                    hp: card.hp,
-                    type: card.type,
-                    moveName: card.moveName,
-                    moveDesc: card.moveDesc,
-                    damage: card.damage,
-                    imageSrc: card.imageSrc || (card.image && card.image.src ? card.image.src : fallbackImg.src)
-                };
-            });
-            localStorage.setItem('pocket_mon_dex', JSON.stringify(serializable));
+            localStorage.setItem('pocket_mon_dex', JSON.stringify(collectionDex));
         } catch(e) {}
     }
 
@@ -680,9 +652,7 @@
                 const img = new Image();
                 img.onload = function() {
                     compressImage(img, (compressedSrc) => {
-                        const compImg = new Image();
-                        compImg.src = compressedSrc;
-                        loadedImageObjects.push(compImg);
+                        loadedImageObjects.push(compressedSrc);
                         loadedCount++;
                         statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
                         
@@ -700,7 +670,7 @@
 
     function tryOpenPack() {
         if (loadedImageObjects.length === 0) {
-            loadedImageObjects.push(fallbackImg);
+            loadedImageObjects.push(fallbackImg.src);
         }
         generateBatchCards();
 
@@ -770,7 +740,7 @@
         hasHighRarityInBatch = false;
 
         for (let i = 0; i < 5; i++) {
-            const randImg = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)] || fallbackImg;
+            const randImgSrc = loadedImageObjects[Math.floor(Math.random() * loadedImageObjects.length)] || fallbackImg.src;
             const rRand = Math.random();
             let rarity = "★";
             if (rRand > 0.90) {
@@ -788,7 +758,6 @@
             const flavorText = getRandomItem(chaoticFlavors);
 
             const card = {
-                image: randImg,
                 rarity: rarity,
                 name: cardName,
                 hp: Math.floor(Math.random() * 800 + 100),
@@ -796,7 +765,7 @@
                 moveName: moveName,
                 moveDesc: flavorText,
                 damage: Math.floor(Math.random() * 300 + 50),
-                imageSrc: randImg.src || fallbackImg.src
+                imageSrc: randImgSrc
             };
             openedBatchCards.push(card);
 
@@ -938,9 +907,10 @@
         ctx.lineWidth = 4;
         ctx.strokeRect(40, 85, canvas.width - 80, 430);
 
+        const img = new Image();
+        img.src = card.imageSrc || fallbackImg.src;
         try {
-            const imgToDraw = (card.image && card.image.complete && card.image.naturalWidth !== 0) ? card.image : fallbackImg;
-            ctx.drawImage(imgToDraw, 42, 87, canvas.width - 84, 426);
+            ctx.drawImage(img, 42, 87, canvas.width - 84, 426);
         } catch(e) {
             ctx.drawImage(fallbackImg, 42, 87, canvas.width - 84, 426);
         }
@@ -1146,7 +1116,7 @@
     }
 
     // ==========================================
-    // 獲得カード図鑑 (確実な一覧サムネイル描画)
+    // 獲得カード図鑑 (確実な画像生成とサムネイル表示)
     // ==========================================
     function openDex() {
         loadDexFromStorage();
@@ -1155,7 +1125,7 @@
         grid.innerHTML = '';
 
         if (!collectionDex || collectionDex.length === 0) {
-            grid.innerHTML = '<p style="grid-column: span 3; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
+            grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#888;">まだカードがありません。パックを開封しよう！</p>';
             return;
         }
 
@@ -1164,23 +1134,15 @@
             item.className = 'dex-item';
             
             const thumbCanvas = document.createElement('canvas');
-            thumbCanvas.width = 270; thumbCanvas.height = 410;
+            thumbCanvas.width = 270; 
+            thumbCanvas.height = 410;
             
-            if (!card.image) {
-                card.image = new Image();
-                card.image.src = card.imageSrc || fallbackImg.src;
-            }
-
-            if (card.image.complete && card.image.naturalWidth !== 0) {
-                renderCardCanvas(card, 0, 0, thumbCanvas);
-            } else {
-                card.image.onload = () => {
-                    renderCardCanvas(card, 0, 0, thumbCanvas);
-                };
-                renderCardCanvas(card, 0, 0, thumbCanvas);
-            }
+            renderCardCanvas(card, 0, 0, thumbCanvas);
             
-            item.appendChild(thumbCanvas);
+            // キャンバスをPNG画像に変換してimgタグで表示することでスマホでの描画抜けを完全に防止
+            const imgEl = document.createElement('img');
+            imgEl.src = thumbCanvas.toDataURL('image/png');
+            item.appendChild(imgEl);
             
             // タップで1枚表示＆360度鑑賞モードへ
             item.onclick = () => {
