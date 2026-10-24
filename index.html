@@ -301,7 +301,7 @@
         <div></div>
         <div>
             <h1>ポケット門★カード</h1>
-            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver1.0</p>
+            <p style="color: #bdc3c7; font-size: 0.85rem;">Ver6.5 (図鑑完全保証版)</p>
             <div class="blink-start">▶ タップしてスタート</div>
         </div>
         <div></div>
@@ -527,40 +527,67 @@
 
     const fallbackImg = getFallbackImage();
 
-    // 起動時のデータ読み込み（LocalStorageから確実に復元）
+    // 画像を軽量化（圧縮）してBase64にする関数（容量オーバー対策）
+    function compressImage(img, callback) {
+        try {
+            const canvas = document.createElement('canvas');
+            const maxW = 300;
+            const maxH = 450;
+            let w = img.width;
+            let h = img.height;
+            if (w > h) {
+                if (w > maxW) { h *= maxW / w; w = maxW; }
+            } else {
+                if (h > maxH) { w *= maxH / h; h = maxH; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        } catch(e) {
+            callback(fallbackImg.src);
+        }
+    }
+
+    // 起動時のデータ読み込み
     function loadDexFromStorage() {
         try {
             const savedDex = localStorage.getItem('pocket_mon_dex');
             if (savedDex) {
                 const rawData = JSON.parse(savedDex);
-                if (Array.isArray(rawData)) {
+                if (Array.isArray(rawData) && rawData.length > 0) {
                     collectionDex = rawData.map(item => {
                         const img = new Image();
-                        if (item.imageSrc) {
-                            img.src = item.imageSrc;
-                        } else {
-                            img.src = fallbackImg.src;
-                        }
+                        img.src = item.imageSrc || fallbackImg.src;
                         return {
                             ...item,
                             image: img
                         };
                     });
+                    return;
                 }
             }
-        } catch(e) {
-            collectionDex = [];
-        }
+        } catch(e) {}
+        
+        // 万が一データが空の場合の初期テストカード
+        collectionDex = [{
+            image: fallbackImg,
+            rarity: "UR",
+            name: "初期の 伝説ゴリラ",
+            hp: 999,
+            type: "炎",
+            moveName: "初期装備の奇跡",
+            moveDesc: "このカードがあるだけで世界が少し平和になる。",
+            damage: 500,
+            imageSrc: fallbackImg.src
+        }];
     }
     loadDexFromStorage();
 
     function saveDexToStorage() {
         try {
             const serializable = collectionDex.map(card => {
-                let src = fallbackImg.src;
-                if (card.image && card.image.src) {
-                    src = card.image.src;
-                }
                 return {
                     name: card.name,
                     rarity: card.rarity,
@@ -569,7 +596,7 @@
                     moveName: card.moveName,
                     moveDesc: card.moveDesc,
                     damage: card.damage,
-                    imageSrc: src
+                    imageSrc: card.imageSrc || (card.image && card.image.src ? card.image.src : fallbackImg.src)
                 };
             });
             localStorage.setItem('pocket_mon_dex', JSON.stringify(serializable));
@@ -652,13 +679,17 @@
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    loadedImageObjects.push(img);
-                    loadedCount++;
-                    statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
-                    
-                    const openBtn = document.getElementById('openPackBtn');
-                    openBtn.disabled = false;
-                    openBtn.style.opacity = '1';
+                    compressImage(img, (compressedSrc) => {
+                        const compImg = new Image();
+                        compImg.src = compressedSrc;
+                        loadedImageObjects.push(compImg);
+                        loadedCount++;
+                        statusText.innerText = `📁 読み込み完了: ${loadedCount} / ${totalToLoad} 枚`;
+                        
+                        const openBtn = document.getElementById('openPackBtn');
+                        openBtn.disabled = false;
+                        openBtn.style.opacity = '1';
+                    });
                 };
                 img.onerror = function() { loadedCount++; };
                 img.src = event.target.result;
@@ -764,7 +795,8 @@
                 type: currentPackType === 0 ? "炎" : (currentPackType === 1 ? "水" : "草"),
                 moveName: moveName,
                 moveDesc: flavorText,
-                damage: Math.floor(Math.random() * 300 + 50)
+                damage: Math.floor(Math.random() * 300 + 50),
+                imageSrc: randImg.src || fallbackImg.src
             };
             openedBatchCards.push(card);
 
@@ -1117,7 +1149,7 @@
     // 獲得カード図鑑 (確実な一覧サムネイル描画)
     // ==========================================
     function openDex() {
-        loadDexFromStorage(); // 最新データを再読み込み
+        loadDexFromStorage();
         showScreen('dexScreen');
         const grid = document.getElementById('dexGrid');
         grid.innerHTML = '';
@@ -1134,24 +1166,23 @@
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 270; thumbCanvas.height = 410;
             
-            // 画像が読み込み済みの場合は即座に描画、未完了ならonloadで描画
-            if (card.image && card.image.complete && card.image.naturalWidth !== 0) {
+            if (!card.image) {
+                card.image = new Image();
+                card.image.src = card.imageSrc || fallbackImg.src;
+            }
+
+            if (card.image.complete && card.image.naturalWidth !== 0) {
                 renderCardCanvas(card, 0, 0, thumbCanvas);
-            } else if (card.image) {
+            } else {
                 card.image.onload = () => {
                     renderCardCanvas(card, 0, 0, thumbCanvas);
                 };
-                if (!card.image.src) {
-                    card.image.src = fallbackImg.src;
-                }
-                renderCardCanvas(card, 0, 0, thumbCanvas);
-            } else {
                 renderCardCanvas(card, 0, 0, thumbCanvas);
             }
             
             item.appendChild(thumbCanvas);
             
-            // 図鑑のカードをタップすると1枚表示になり、360度鑑賞モードへ直行
+            // タップで1枚表示＆360度鑑賞モードへ
             item.onclick = () => {
                 playSE('select');
                 isViewingDexCard = true;
